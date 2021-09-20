@@ -7,7 +7,6 @@ import cloud.commandframework.annotations.CommandPermission;
 import cloud.commandframework.annotations.specifier.Greedy;
 import cloud.commandframework.annotations.suggestions.Suggestions;
 import cloud.commandframework.context.CommandContext;
-import com.vanillarite.faq.storage.FaqCache;
 import com.vanillarite.faq.storage.Manager;
 import com.vanillarite.faq.storage.Topic;
 import com.vanillarite.faq.storage.supabase.Field;
@@ -17,8 +16,6 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
 import org.jetbrains.annotations.NotNull;
 
-import java.time.Duration;
-import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
@@ -50,6 +47,38 @@ public class Commands {
   ) {
     manager.showFaqList(sender, "faq");
   }
+
+  @CommandDescription("View a topic from the FAQ")
+  @CommandMethod("faq <topic>")
+  @CommandPermission("vfaq.faq")
+  private void commandFaq(
+      final @NotNull CommandSender sender,
+      final @NotNull @Argument(value = "topic", suggestions = "faqTopicsAll") @Greedy String topic
+  ) {
+    var section = plugin.section("messages");
+    var prefix = plugin.prefixFor(sender, "faq");
+
+    manager.cache().findIgnoreEmpty(topic).ifPresentOrElse(
+        (t) -> prefix.response(
+            section.getString("header") + "<r>\n\n" + t.content() + "\n",
+            Template.of("topic", t.topic())
+        ),
+        ( ) -> {
+          prefix.logged(section.getString("unknown_topic"));
+        }
+    );
+  }
+
+
+  @CommandDescription("List all FAQs to show to someone else")
+  @CommandMethod("faq4u")
+  @CommandPermission("vfaq.faq4u")
+  private void commandFaqForYouNoArgs(
+      final @NotNull CommandSender sender
+  ) {
+    manager.showFaqList(sender, "faq4u");
+  }
+
 
   @CommandDescription("Show everyone else a topic from the FAQ")
   @CommandMethod("faq4u <topic>")
@@ -122,7 +151,7 @@ public class Commands {
   }
 
   @CommandDescription("List all FAQ for management")
-  @CommandMethod("faqeditor list")
+  @CommandMethod("faqeditor")
   @CommandPermission("vfaq.manage.list")
   private void commandFaqList(
       final @NotNull CommandSender sender

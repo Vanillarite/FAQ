@@ -92,7 +92,7 @@ public class Commands {
         (t) -> {
           var preface = t.smartPreface(section.getInt("max_preview_lines"));
           var keepReading = showText(
-              m.parse(Objects.requireNonNull(section.getString("hover")), Template.of("topic", t.topic()))
+              m.parse(Objects.requireNonNull(section.getString("keep_reading_hover")), Template.of("topic", t.topic()))
           );
           preface.lines().forEach(i -> {
             var component = prefix.component(i);

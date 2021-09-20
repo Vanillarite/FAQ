@@ -8,6 +8,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -25,7 +26,8 @@ public final class AdventureEditorAPI {
 
   public @NotNull CompletableFuture<String> startSession(final @NotNull String input, final @NotNull String command, final @NotNull String application) {
     final HttpRequest request = HttpRequest.newBuilder()
-        .POST(HttpRequest.BodyPublishers.ofString(constructBody(input, command, application)))
+        .POST(HttpRequest.BodyPublishers.ofString(constructBody(input, command, application), StandardCharsets.UTF_8))
+        .header("content-type", "application/json; charset=UTF-8")
         .uri(root.resolve(URI.create("/api/editor/input")))
         .build();
     final CompletableFuture<String> result = new CompletableFuture<>();

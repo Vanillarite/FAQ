@@ -167,11 +167,11 @@ public class FaqCache extends SingleCache<ArrayList<Topic>> {
       HttpRequest faqListRequest = sb.single("faqs?active=is.true&id=eq." + id)
           .method("PATCH", HttpRequest.BodyPublishers.ofString(body.toString()))
           .build();
-      HttpResponse<InputStream> faqList = HttpClient.newHttpClient()
-          .send(faqListRequest, HttpResponse.BodyHandlers.ofInputStream());
+      HttpResponse<String> faqList = HttpClient.newHttpClient()
+          .send(faqListRequest, HttpResponse.BodyHandlers.ofString());
 
       if (faqList.statusCode() >= 300) {
-        throw new IllegalStateException("Failed to delete? Got %s - %s".formatted(faqList.statusCode(), new String(faqList.body().readAllBytes())));
+        throw new IllegalStateException("Failed to delete? Got %s - %s".formatted(faqList.statusCode(), faqList.body()));
       }
 
       invalidate();

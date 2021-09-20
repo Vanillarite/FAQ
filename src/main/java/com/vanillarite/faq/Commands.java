@@ -63,12 +63,9 @@ public class Commands {
             section.getString("header") + "<r>\n\n" + t.content() + "\n",
             Template.of("topic", t.topic())
         ),
-        ( ) -> {
-          prefix.logged(section.getString("unknown_topic"));
-        }
+        ( ) -> prefix.logged(section.getString("unknown_topic"))
     );
   }
-
 
   @CommandDescription("List all FAQs to show to someone else")
   @CommandMethod("faq4u")

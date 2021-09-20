@@ -18,10 +18,6 @@ public class SingleCache<T> {
     this.cache = CacheBuilder.newBuilder().expireAfterWrite(duration, unit).maximumSize(1).build();
   }
 
-  public T getIfPresent() {
-    return cache.getIfPresent(KEY);
-  }
-
   public T invalidateAndGet() {
     invalidate();
     return get();

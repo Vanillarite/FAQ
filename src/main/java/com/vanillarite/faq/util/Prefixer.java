@@ -9,7 +9,6 @@ import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.List;
 import static com.vanillarite.faq.FaqPlugin.m;
 
 public class Prefixer {
@@ -65,10 +64,5 @@ public class Prefixer {
     sender.sendMessage(component(miniMessage, templates));
   }
 
-  public void logged(List<String> miniMessages, Template... templates) {
-    for (String miniMessage : miniMessages) {
-      logged(miniMessage, templates);
-    }
-  }
 }
 

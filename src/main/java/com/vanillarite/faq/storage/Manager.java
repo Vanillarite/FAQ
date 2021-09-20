@@ -96,8 +96,8 @@ public class Manager {
 
     var token = new AdventureEditorAPI(URI.create(editorLink)).startSession(
         requireNonBlankElse(existing.findField(field), placeholder),
-        "/vu faqeditor submit %s %s {token}".formatted(String.valueOf(existing.id()), field.name().toLowerCase()),
-        "VanillariteUtil FAQ"
+        "/faqeditor submit %s %s {token}".formatted(String.valueOf(existing.id()), field.name().toLowerCase()),
+        "VanillariteFAQ"
     ).get();
 
     var tokenLink = "%s?mode=chat_open&token=%s".formatted(editorLink, token);
@@ -127,8 +127,8 @@ public class Manager {
     List.of(
         Pair.of("content", makeEditorLink(noHover, faq, Field.CONTENT, section.getString("initial_placeholder"))),
         Pair.of("preface", makeEditorLink(noHover, faq, Field.PREFACE, section.getString("initial_placeholder"))),
-        Pair.of("rename", cmd.apply("/vu faqeditor set %s topic ")),
-        Pair.of("delete", cmd.apply("/vu faqeditor delete %s"))
+        Pair.of("rename", cmd.apply("/faqeditor set %s topic ")),
+        Pair.of("delete", cmd.apply("/faqeditor delete %s"))
     ).forEach(i -> {
       if (permissionChecker.test("vfaq.manage." + (i.getFirst().equals("delete") ? i.getFirst() : "edit." + i.getFirst()))) {
         buttons.add(makeButton(i.getFirst(), i.getSecond()));
@@ -178,7 +178,7 @@ public class Manager {
   public void applyEditor(CommandSender sender, int id, String token, Field field) {
     var editor = plugin.section("mm_editor");
     var editorLink = Objects.requireNonNull(editor.getString("url"));
-    var prefix = plugin.prefixFor(sender, "vu");
+    var prefix = plugin.prefixFor(sender, "editor");
 
     prefix.response(text("Processing change...", GRAY, ITALIC));
 

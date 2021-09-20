@@ -165,7 +165,7 @@ public class Commands {
         Template.of("created_ago", formatInstantToNow(topic.createdAt())),
         Template.of("updated_ago", formatInstantToNow(topic.updatedAt())),
         Template.of("edit_button", m.parse(Objects.requireNonNull(section.getString("edit_label")))
-            .clickEvent(runCommand("/vu faqeditor actions %s".formatted(topic.id())))),
+            .clickEvent(runCommand("/faqeditor actions %s".formatted(topic.id())))),
         Template.of("preview_content", manager.makePreview("content", topic.content())),
         Template.of("preview_preface", manager.makePreview("preface", topic.preface()))
     ));

@@ -1,0 +1,58 @@
+debug: false
+
+prefixes:
+  faq: "<gradient:#2fb7bb:#8ee9ec><b>FAQ</gradient> <#eae9eb>»<r> "
+  faq4u: "<gradient:#2fb7bb:#8ee9ec><b>FAQ4U</gradient> <#eae9eb>»<r> "
+  editor: "<gradient:#2fb7bb:#8ee9ec><b>VanillariteFAQ</gradient> <#eae9eb>»<r> "
+
+messages:
+  list:
+    faq:
+      header: "<gold>Click on a topic to learn more about it!</gold>"
+      prefix: "<light_purple><b>•<r> "
+      each_topic: "<black>[<aqua><topic></aqua>]</black>  "
+      hover: "<gold>Click here to learn more about <b><topic></b></gold>"
+      max_per_line: 5
+    faq4u:
+      header: "<gold>Click on a topic to <b>broadcast it and educate others</b> about it!</gold>"
+      prefix: "<red><b>•<r> "
+      each_topic: "<white>[<dark_aqua><topic></dark_aqua>]</white>  "
+      hover: "<gold>Click here to educate others about <b><topic></b></gold>"
+      max_per_line: 5
+  manage:
+    initial_placeholder: '<#BDF9FC>Edit me...'
+    edit:
+      header: "<gold>Click on a button below to edit <i><topic></i>. Note that these links are <underlined>one time use</underlined> only</gold>"
+      button:
+        content: "<hover:show_text:'Click to change the full content'><aqua>[Content]</aqua></hover>"
+        preface: "<hover:show_text:'Click to change the FAQ4U preface (or leave blank to remove)'><dark_aqua>[Preface]</dark_aqua>"
+        rename: "<hover:show_text:'Click to rename the topic'><yellow>[Rename]</yellow>"
+        delete: "<hover:show_text:'<red>⚠ Click to delete the FAQ topic. ⚠</red>'><red>[Delete]</red>"
+    list:
+      header: "<gold>In total, <b><count></b> FAQ topics exist right now</gold>"
+      incomplete: " <red>⚠ Content needs to be set</red>"
+      edit_label: "<hover:show_text:'Click here to edit this topic'><red>[✎ edit]</red></hover>"
+      preview:
+        content:
+          label: "<aqua>[C?]</aqua>"
+          empty: "<gray>[C×]</gray>"
+        preface:
+          label: "<dark_aqua>[P?]</dark_aqua>"
+          empty: "<dark_gray>[P×]</dark_gray>"
+      line: "<edit_button> <preview_content> <preview_preface> #<b><id></b> <gray>:</gray>
+        <i><topic></i> <gray>by</gray>
+        <hover:show_text:'Created <created_ago> ago\nModified <updated_ago> ago'><gold><author></gold></hover>."
+  header: "<gold><i>On the topic of <b><topic></b>...</i>"
+  unknown_topic: "<red>No such FAQ topic exists!"
+  keep_reading: "<aqua><b>[</b><underlined>Click here to keep reading!</underlined><b>]</b></aqua>"
+  keep_reading_hover: "<gold>Click here to keep reading about <b><topic></b></gold>"
+  max_preview_lines: 3
+
+supabase:
+  url: 'https://project.supabase.co'
+  anon_key: 'eyyyy'
+  auth_key: 'eyyyy'
+
+mm_editor:
+  url: 'https://webui.adventure.kyori.net/'
+

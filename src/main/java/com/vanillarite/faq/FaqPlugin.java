@@ -66,6 +66,9 @@ public final class FaqPlugin extends JavaPlugin {
     AnnotationParser<CommandSender> annotationParser =
         new AnnotationParser<>(manager, CommandSender.class, commandMetaFunction);
 
+    var commandHolder = new Commands(this);
+    annotationParser.parse(commandHolder);
+    getLogger().info(manager.getCommands().toString());
   }
 
   public void networkBroadcast(@NotNull Component c, @Nullable CommandSender sender) {

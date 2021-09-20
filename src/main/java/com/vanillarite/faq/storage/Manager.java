@@ -52,7 +52,7 @@ public class Manager {
   }
 
   private SupabaseConnection supabase() {
-    var section = plugin.section("faq", "supabase");
+    var section = plugin.section("supabase");
 
     return new SupabaseConnection(
         URI.create(Objects.requireNonNull(section.getString("url"))),
@@ -91,7 +91,7 @@ public class Manager {
   }
 
   public Function<Component, Component> makeEditorLink(boolean noHover, Topic existing, Field field, String placeholder) throws ExecutionException, InterruptedException {
-    var editor = plugin.section("faq", "mm_editor");
+    var editor = plugin.section("mm_editor");
     var editorLink = Objects.requireNonNull(editor.getString("url"));
 
     var token = new AdventureEditorAPI(URI.create(editorLink)).startSession(
@@ -176,7 +176,7 @@ public class Manager {
   }
 
   public void applyEditor(CommandSender sender, int id, String token, Field field) {
-    var editor = plugin.section("faq", "mm_editor");
+    var editor = plugin.section("mm_editor");
     var editorLink = Objects.requireNonNull(editor.getString("url"));
     var prefix = plugin.prefixFor(sender, "vu");
 

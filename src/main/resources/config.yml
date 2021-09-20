@@ -1,6 +1,6 @@
 debug: false
 
-prefixes:
+prefix:
   faq: "<gradient:#2fb7bb:#8ee9ec><b>FAQ</gradient> <#eae9eb>»<r> "
   faq4u: "<gradient:#2fb7bb:#8ee9ec><b>FAQ4U</gradient> <#eae9eb>»<r> "
   editor: "<gradient:#2fb7bb:#8ee9ec><b>VanillariteFAQ</gradient> <#eae9eb>»<r> "

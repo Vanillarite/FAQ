@@ -190,6 +190,7 @@ public class Commands {
     try {
       prefix.response(section.getString("header"), Template.of("topic", existing.topic()));
       prefix.response(manager.makeButtons((sender instanceof ConsoleCommandSender), existing, sender::hasPermission));
+      prefix.response(text("Aliases: (%s) ".formatted(existing.alias().size())).append(text(existing.alias().toString())));
       prefix.response(Component.empty());
     } catch (ExecutionException | InterruptedException e) {
       prefix.logged(text("Failed?", RED));

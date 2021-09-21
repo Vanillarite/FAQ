@@ -1,5 +1,7 @@
 package com.vanillarite.faq.storage;
 
+import com.google.common.collect.Streams;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.vanillarite.faq.storage.supabase.Field;
 import org.jetbrains.annotations.Nullable;
@@ -16,6 +18,7 @@ public record Topic(
     String topic,
     String content,
     @Nullable String preface,
+    List<String> alias,
     UUID author,
     Instant createdAt,
     Instant updatedAt
@@ -26,6 +29,7 @@ public record Topic(
         json.get("topic").getAsString(),
         json.get("content").getAsString(),
         json.get("preface").isJsonNull() ? null : json.get("preface").getAsString(),
+        Streams.stream(json.get("alias").getAsJsonArray().iterator()).map(JsonElement::getAsString).toList(),
         UUID.fromString(json.get("author").getAsString()),
         OffsetDateTime.parse(json.get("created_at").getAsString()).toInstant(),
         OffsetDateTime.parse(json.get("updated_at").getAsString()).toInstant()

@@ -16,21 +16,19 @@ public class DurationUtil {
     if (duration.isZero()) return "one moment";
 
     List<String> s = new ArrayList<>();
-    String delimiter = ", ";
+    String delimiter = " ";
 
     long iDays = duration.toDaysPart();
-    if (iDays > 0) s.add(iDays == 1 ? "1 day" : String.format("%d days", iDays));
+    if (iDays > 0) s.add(String.format("%dd", iDays));
 
     int iHours = duration.toHoursPart();
-    if (iHours > 0) s.add(iHours == 1 ? "1 hour" : String.format("%d hours", iHours));
+    if (iHours > 0) s.add(String.format("%dh", iHours));
 
     int iMinutes = duration.toMinutesPart();
-    if (iMinutes > 0) s.add(iMinutes == 1 ? "1 minute" : String.format("%d minutes", iMinutes));
+    if (iMinutes > 0) s.add(String.format("%dm", iMinutes));
 
     int iSeconds = duration.toSecondsPart();
-    if (iSeconds > 0) s.add(iSeconds == 1 ? "1 second" : String.format("%d seconds", iSeconds));
-
-    if (s.size() == 2 || specificity == 2) delimiter = " and ";
+    if (iSeconds > 0) s.add(String.format("%ds", iSeconds));
 
     return s.stream().limit(specificity).collect(Collectors.joining(delimiter));
   }

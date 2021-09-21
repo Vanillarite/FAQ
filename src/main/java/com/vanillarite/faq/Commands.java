@@ -7,6 +7,8 @@ import cloud.commandframework.annotations.CommandPermission;
 import cloud.commandframework.annotations.specifier.Greedy;
 import cloud.commandframework.annotations.suggestions.Suggestions;
 import cloud.commandframework.context.CommandContext;
+import com.github.difflib.algorithm.DiffException;
+import com.github.difflib.text.DiffRowGenerator;
 import com.vanillarite.faq.storage.Manager;
 import com.vanillarite.faq.storage.Topic;
 import com.vanillarite.faq.storage.supabase.Field;
@@ -63,7 +65,7 @@ public class Commands {
             section.getString("header") + "<r>\n\n" + t.content() + "\n",
             Template.of("topic", t.topic())
         ),
-        ( ) -> prefix.logged(section.getString("unknown_topic"))
+        () -> prefix.logged(section.getString("unknown_topic"))
     );
   }
 
@@ -109,7 +111,7 @@ public class Commands {
             ).hoverEvent(keepReading), sender);
           }
         },
-        ( ) -> prefix4u.logged(section.getString("unknown_topic"))
+        () -> prefix4u.logged(section.getString("unknown_topic"))
     );
   }
 
@@ -161,7 +163,7 @@ public class Commands {
         section.getString("line") + (topic.content().isBlank() ? section.getString("incomplete") : ""),
         Template.of("id", String.valueOf(topic.id())),
         Template.of("topic", String.valueOf(topic.topic())),
-        Template.of("author", manager.resolveAuthor(topic.author())),
+        Template.of("author", Manager.resolveAuthor(topic.author())),
         Template.of("created_ago", formatInstantToNow(topic.createdAt())),
         Template.of("updated_ago", formatInstantToNow(topic.updatedAt())),
         Template.of("edit_button", m.parse(Objects.requireNonNull(section.getString("edit_label")))
@@ -193,7 +195,6 @@ public class Commands {
       prefix.logged(text("Failed?", RED));
     }
   }
-
 
 
   @CommandDescription("Apply editor modification to the content of a FAQ")
@@ -239,7 +240,7 @@ public class Commands {
     var modified = manager.updateFaqTopic(id, Field.TOPIC, newTopic, sender);
     modified.ifPresentOrElse(
         faqTopic -> prefix.logged(text("Success! TOPIC of #%s was modified (now %s)".formatted(id, faqTopic.topic()))),
-        () ->       prefix.logged(text("Saving new TOPIC failed?", RED))
+        () -> prefix.logged(text("Saving new TOPIC failed?", RED))
     );
   }
 
@@ -270,6 +271,49 @@ public class Commands {
 
     var prefix = plugin.prefixFor(sender, "editor");
     prefix.response("Config was reloaded!");
+  }
+
+  @CommandMethod("faqeditor admin history <id>")
+  @CommandPermission("vfaq.admin.history")
+  private void commandAdminHistory(
+      final @NotNull CommandSender sender,
+      final @Argument("id") int faq
+  ) {
+    var history = manager.cache().supabaseGetHistoryForFaq(manager.supabase(), faq).orElseThrow();
+    history.forEach(i -> sender.sendMessage(i.asComponent()));
+  }
+
+  @CommandMethod("faqeditor admin inspect <id>")
+  @CommandPermission("vfaq.admin.inspect")
+  private void commandAdminInspect(
+      final @NotNull CommandSender sender,
+      final @Argument("id") int historyId
+  ) {
+    var history = manager.cache().supabaseGetHistorySingle(manager.supabase(), historyId).orElseThrow();
+    var delimiter = text("====== Modification inspection for %s ======".formatted(history.id()));
+    try {
+      var drg = DiffRowGenerator.create()
+          .showInlineDiffs(true)
+          .mergeOriginalRevised(true)
+          .lineNormalizer(i -> i.replace("<", "\\<"))
+          .oldTag(f -> f ? "<red><st>" : "</st></red>")
+          .newTag(f -> f ? "<green><u>" : "</u></green>")
+          .build();
+      var rows = drg.generateDiffRows(List.of(history.beforeOrBlank().split("\n")), List.of(history.after().split("\n")));
+      sender.sendMessage(delimiter);
+      rows.forEach(r -> {
+        var prefix = switch (r.getTag()) {
+          case EQUAL -> text(" = ", WHITE);
+          case INSERT -> text(" + ", GREEN);
+          case DELETE -> text(" - ", RED);
+          case CHANGE -> text(" > ", YELLOW);
+        };
+        sender.sendMessage(text("", GRAY).append(prefix).append(text("| ", DARK_GRAY)).append(m.parse(r.getOldLine())));
+      });
+      sender.sendMessage(delimiter);
+    } catch (DiffException e) {
+      e.printStackTrace();
+    }
   }
 
   @Suggestions("faqTopicsAll")

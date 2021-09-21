@@ -20,6 +20,8 @@ dependencies {
     implementation("net.kyori", "adventure-text-minimessage", "4.2.0-SNAPSHOT") {
         exclude("net.kyori", "adventure-api")
     }
+    implementation("net.kyori", "adventure-text-feature-pagination", "4.0.0-SNAPSHOT")
+    implementation("io.github.java-diff-utils", "java-diff-utils", "4.5")
 }
 
 java {
@@ -40,9 +42,10 @@ tasks {
         relocate("cloud.commandframework", "${rootProject.group}.faq.shade.cloud")
         relocate("io.leangen.geantyref", "${rootProject.group}.faq.shade.typetoken")
         relocate("net.kyori.adventure.text.minimessage", "${rootProject.group}.faq.shade.minimessage")
+        relocate("com.github.difflib", "${rootProject.group}.faq.shade.difflib")
 
         archiveClassifier.set(null as String?)
-        archiveFileName.set(project.name + "-" + project.version + ".jar")
+        archiveFileName.set(project.name + ".jar")
         destinationDirectory.set(rootProject.tasks.shadowJar.get().destinationDirectory.get())
     }
     build {

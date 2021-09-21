@@ -40,7 +40,7 @@ import static net.kyori.adventure.text.format.TextDecoration.ITALIC;
 public class Manager {
   private final FaqPlugin plugin;
   private final FaqCache faqCache;
-  private static final UUID NULL_UUID = new UUID(0, 0);
+  public static final UUID NULL_UUID = new UUID(0, 0);
 
   public Manager(FaqPlugin plugin) {
     this.plugin = plugin;
@@ -51,7 +51,7 @@ public class Manager {
     return faqCache;
   }
 
-  private SupabaseConnection supabase() {
+  public SupabaseConnection supabase() {
     var section = plugin.section("supabase");
 
     return new SupabaseConnection(
@@ -84,10 +84,6 @@ public class Manager {
       plugin.getLogger().severe("FAQ List cache was invalidated but couldn't update. A stack trace is above");
       return null;
     }
-  }
-
-  public Function<Component, Component> makeEditorLink(boolean noHover, Topic existing, Field field) throws ExecutionException, InterruptedException {
-    return makeEditorLink(noHover, existing, field, null);
   }
 
   public Function<Component, Component> makeEditorLink(boolean noHover, Topic existing, Field field, String placeholder) throws ExecutionException, InterruptedException {
@@ -209,7 +205,7 @@ public class Manager {
   }
 
 
-  public String resolveAuthor(UUID author) {
+  public static String resolveAuthor(UUID author) {
     if (author.equals(NULL_UUID)) return "SYSTEM";
     var player = Bukkit.getOfflinePlayer(author);
     return Objects.requireNonNullElse(player.getName(), "Unknown user " + author);

@@ -1,6 +1,5 @@
 package com.vanillarite.faq.storage;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -19,7 +18,6 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.Callable;
@@ -49,6 +47,42 @@ public class FaqCache extends SingleCache<ArrayList<Topic>> {
   public void invalidate() {
     plugin.debug("FAQ List cache was manually invalidated");
     super.invalidate();
+  }
+
+  public Optional<ArrayList<History>> supabaseGetHistoryForFaq(SupabaseConnection sb, int forFaq) {
+    try {
+      HttpRequest faqListRequest = sb.request("history?faq=eq." + forFaq).GET().build();
+      HttpResponse<InputStream> faqList = HttpClient.newHttpClient()
+          .send(faqListRequest, HttpResponse.BodyHandlers.ofInputStream());
+
+      var jp = new JsonParser();
+      JsonElement root = jp.parse(new InputStreamReader(faqList.body(), StandardCharsets.UTF_8));
+      JsonArray faqListObject = root.getAsJsonArray();
+
+      var history = new ArrayList<History>();
+      faqListObject.forEach((json) -> history.add(History.fromJson(json.getAsJsonObject())));
+      return Optional.of(history);
+    } catch (IOException | InterruptedException e) {
+      e.printStackTrace();
+      return Optional.empty();
+    }
+  }
+
+  public Optional<History> supabaseGetHistorySingle(SupabaseConnection sb, int id) {
+    try {
+      HttpRequest faqListRequest = sb.single("history?id=eq." + id).GET().build();
+      HttpResponse<InputStream> faqList = HttpClient.newHttpClient()
+          .send(faqListRequest, HttpResponse.BodyHandlers.ofInputStream());
+
+      var jp = new JsonParser();
+      JsonElement root = jp.parse(new InputStreamReader(faqList.body(), StandardCharsets.UTF_8));
+      JsonObject newFaqObject = root.getAsJsonObject();
+
+      return Optional.of(History.fromJson(newFaqObject));
+    } catch (IOException | InterruptedException e) {
+      e.printStackTrace();
+      return Optional.empty();
+    }
   }
 
   public Optional<ArrayList<Topic>> supabaseGet(SupabaseConnection sb) {

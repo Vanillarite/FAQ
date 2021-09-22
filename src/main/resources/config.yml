@@ -28,6 +28,7 @@ messages:
         preface: "<hover:show_text:'Click to change the FAQ4U preface (or leave blank to remove)'><dark_aqua>[Preface]</dark_aqua>"
         rename: "<hover:show_text:'Click to rename the topic'><yellow>[Rename]</yellow>"
         delete: "<hover:show_text:'<red>⚠ Click to delete the FAQ topic. ⚠</red>'><red>[Delete]</red>"
+        history: "<hover:show_text:'Click to see all changes made to this topic'><b>[History]</b>"
     list:
       header: "<gold>In total, <b><count></b> FAQ topics exist right now</gold>"
       incomplete: " <red>⚠ Content needs to be set</red>"
@@ -42,6 +43,10 @@ messages:
       line: "<edit_button> <preview_content> <preview_preface> #<b><id></b> <gray>:</gray>
         <i><topic></i> <gray>by</gray>
         <hover:show_text:'Created <created_ago> ago\nModified <updated_ago> ago'><gold><author></gold></hover>."
+    alias:
+      list: "<count> aliases: "
+      add: "<hover:show_text:'Click to add new alias'><green>[+]</green></hover>"
+      remove: "<hover:show_text:'Click to remove this alias'>[<name>]<red>[-]</red></hover>"
   header: "<gold><i>On the topic of <b><topic></b>...</i>"
   unknown_topic: "<red>No such FAQ topic exists!"
   keep_reading: "<aqua><b>[</b><underlined>Click here to keep reading!</underlined><b>]</b></aqua>"

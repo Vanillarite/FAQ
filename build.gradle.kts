@@ -1,10 +1,21 @@
+import java.io.ByteArrayOutputStream
+
 plugins {
     id("com.github.johnrengelman.shadow") version "7.0.0"
     java
 }
 
+val gitBuild: String = run {
+    val stdout = ByteArrayOutputStream()
+    rootProject.exec {
+        commandLine("git", "rev-list", "--count", "HEAD")
+        standardOutput = stdout
+    }
+    stdout.toString().trim()
+}
+
 group = "com.vanillarite"
-version = "0.0.1"
+version = "0.0.2-b$gitBuild"
 
 repositories {
     mavenCentral()
@@ -55,7 +66,7 @@ tasks {
     withType<ProcessResources> {
         filteringCharset = "UTF-8"
         filesMatching("plugin.yml") {
-            expand(project.properties)
+            expand("version" to version)
         }
     }
 }

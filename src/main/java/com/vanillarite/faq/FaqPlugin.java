@@ -4,11 +4,14 @@ import cloud.commandframework.CommandTree;
 import cloud.commandframework.annotations.AnnotationParser;
 import cloud.commandframework.arguments.parser.ParserParameters;
 import cloud.commandframework.arguments.parser.StandardParameters;
-import cloud.commandframework.bukkit.CloudBukkitCapabilities;
+import cloud.commandframework.bukkit.BukkitPluginRegistrationHandler;
 import cloud.commandframework.execution.AsynchronousCommandExecutionCoordinator;
 import cloud.commandframework.execution.CommandExecutionCoordinator;
+import cloud.commandframework.execution.CommandSuggestionProcessor;
+import cloud.commandframework.execution.preprocessor.CommandPreprocessingContext;
 import cloud.commandframework.meta.CommandMeta;
 import cloud.commandframework.paper.PaperCommandManager;
+import com.destroystokyo.paper.event.server.AsyncTabCompleteEvent;
 import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
 import com.vanillarite.faq.util.Prefixer;
@@ -19,12 +22,21 @@ import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.units.qual.C;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public final class FaqPlugin extends JavaPlugin {
   public static final MiniMessage m = MiniMessage.get();
@@ -53,9 +65,26 @@ public final class FaqPlugin extends JavaPlugin {
       getServer().getPluginManager().disablePlugin(this);
       return;
     }
-    if (manager.queryCapability(CloudBukkitCapabilities.BRIGADIER)) {
-      manager.registerBrigadier();
-    }
+    manager.registerBrigadier();
+    manager.registerAsynchronousCompletions();
+    manager.setCommandSuggestionProcessor(new CommandSuggestionProcessor<>() {
+      @Override
+      public @NonNull List<String> apply(@NonNull CommandPreprocessingContext<CommandSender> context, @NonNull List<String> strings) {
+        final String input;
+        if (context.getInputQueue().isEmpty()) {
+          input = "";
+        } else {
+          input = context.getInputQueue().peek();
+        }
+        final List<String> suggestions = new LinkedList<>();
+        for (final String suggestion : strings) {
+          if (suggestion.toLowerCase().startsWith(input.toLowerCase())) {
+            suggestions.add(suggestion);
+          }
+        }
+        return suggestions;
+      }
+    });
     final Function<ParserParameters, CommandMeta> commandMetaFunction =
         p ->
             CommandMeta.simple()

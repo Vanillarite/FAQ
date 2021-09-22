@@ -363,11 +363,11 @@ public class Commands {
 
   @Suggestions("faqTopicsAll")
   public @NotNull List<String> completeFaqTopicsAll(CommandContext<CommandSender> sender, String input) {
-    var mostLike = manager.cache().get().stream().filter(
-        t -> t.topic().toLowerCase().startsWith(input.toLowerCase())
-    ).limit(20).map(
-        t -> input + t.topic().substring(input.length())
-    );
-    return mostLike.toList();
+    return manager.cache().get().stream().mapMulti((Topic i, Consumer<String> r) -> {
+      r.accept(i.topic());
+      i.alias().forEach(r);
+    }).filter(
+        t -> t.toLowerCase().startsWith(input.toLowerCase())
+    ).limit(20).toList();
   }
 }

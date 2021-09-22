@@ -6,7 +6,6 @@ import com.vanillarite.faq.storage.supabase.Method;
 import com.vanillarite.faq.util.DurationUtil;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
-import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
 import org.bukkit.Bukkit;
 import org.jetbrains.annotations.NotNull;
@@ -64,7 +63,7 @@ public record History(
   }
 
   public Component fieldAwareContent(Supplier<String> supplier, boolean concise) {
-    if (field == Field.TOPIC) {
+    if (field == Field.TOPIC || field == Field.ALIAS) {
       return text(supplier.get(), style(ITALIC));
     } else {
       return text((concise ? "%s" : "%s chars").formatted(supplier.get().length()), style(ITALIC)).hoverEvent(showText(m.parse(supplier.get())));
@@ -74,7 +73,7 @@ public record History(
   public Component asComponent() {
     var component = TextComponent.ofChildren(
         text("#", GRAY),
-        text(asSmallNumbers(id, 4)),
+        text(String.format("%04d", id)),
         text(": ", GRAY),
         toComponent(method),
         toComponent(field),
@@ -140,17 +139,19 @@ public record History(
 
   private Component toComponent(Method method) {
     return switch (method) {
-      case POST -> symbolic("☑", "Create new", NamedTextColor.GREEN);
-      case PATCH -> symbolic("☐", "Edit", NamedTextColor.GOLD);
-      case DELETE -> symbolic("☒", "Delete", NamedTextColor.RED);
+      case POST -> symbolic("☑", "Create new", GREEN);
+      case PATCH -> symbolic("☐", "Edit", GOLD);
+      case DELETE -> symbolic("☒", "Delete", RED);
     };
   }
 
   private Component toComponent(Field field) {
     return switch (field) {
-      case CONTENT -> symbolic("Ⓒ", "Content", NamedTextColor.AQUA);
-      case PREFACE -> symbolic("Ⓟ", "Preface", NamedTextColor.DARK_AQUA);
-      case TOPIC -> symbolic("Ⓣ", "Topic", NamedTextColor.YELLOW);
+      case CONTENT -> symbolic("Ⓒ", "Content", AQUA);
+      case PREFACE -> symbolic("Ⓟ", "Preface", DARK_AQUA);
+      case TOPIC -> symbolic("Ⓣ", "Topic", YELLOW);
+      case ALIAS -> symbolic("Ⓐ", "Alias", WHITE);
+      case GROUP -> symbolic("Ⓖ", "Group", LIGHT_PURPLE);
     };
   }
 }

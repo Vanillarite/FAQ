@@ -9,6 +9,7 @@ import com.vanillarite.faq.storage.supabase.Field;
 import com.vanillarite.faq.storage.supabase.Method;
 import com.vanillarite.faq.storage.supabase.SupabaseConnection;
 import com.vanillarite.faq.util.SingleCache;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -18,6 +19,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.Callable;
@@ -35,8 +37,11 @@ public class FaqCache extends SingleCache<ArrayList<Topic>> {
     return invalidateAndGet().stream().filter(i -> i.id() == id).findFirst().orElseThrow();
   }
 
-  public Optional<Topic> findIgnoreEmpty(String topic) {
-    return get().stream().filter(i -> i.topic().equalsIgnoreCase(topic)).filter(i -> !i.content().isBlank()).findFirst();
+  public Optional<Topic> findTopicOrAlias(String topic) {
+    return get().stream()
+        .filter(i -> !i.content().isBlank())
+        .filter(i -> i.topic().equalsIgnoreCase(topic) || i.alias().stream().anyMatch(a -> a.equalsIgnoreCase(topic)))
+        .findFirst();
   }
 
   public Stream<Topic> getIgnoreEmpty() {
@@ -121,7 +126,7 @@ public class FaqCache extends SingleCache<ArrayList<Topic>> {
 
     if (faqList.statusCode() != 201) throw new IllegalStateException("Couldn't log operation, got %s - %s".formatted(faqList.statusCode(), faqList.body()));
 
-    plugin.debug("FAQ modification has been logged: #%s %s %s by %s; %s chars -> %s chars".formatted(id, method, field, author, before.length(), after.length()));
+    plugin.debug("FAQ modification has been logged: #%s %s %s by %s; %s chars -> %s chars".formatted(id, method, field, author, (before == null ? "empty" : before.length()), after.length()));
   }
 
   public Optional<Topic> supabasePatch(SupabaseConnection sb, int id, Field key, String newValue, UUID author) {
@@ -154,6 +159,45 @@ public class FaqCache extends SingleCache<ArrayList<Topic>> {
     }
   }
 
+  public Optional<Topic> supabasePatchArray(SupabaseConnection sb, int id, Field key, String modifiedEntry, Method actualMethod, UUID author) {
+    if (actualMethod != Method.DELETE && actualMethod != Method.POST) {
+      throw new IllegalStateException();
+    }
+
+    try {
+      var existing = findNow(id);
+
+      logHistory(sb, id, actualMethod, key, (actualMethod == Method.POST ? null : modifiedEntry), (actualMethod == Method.DELETE ? "" : modifiedEntry), author);
+      var newValue = existing.findArrayField(key);
+      if (actualMethod == Method.POST) newValue.add(modifiedEntry);
+      if (actualMethod == Method.DELETE) newValue.remove(modifiedEntry);
+
+      var body = new JsonObject();
+      var arrBody = new JsonArray();
+      newValue.forEach(arrBody::add);
+      body.add(key.name().toLowerCase(), arrBody);
+
+      HttpRequest faqListRequest = sb.single("faqs?active=is.true&id=eq." + id)
+          .method("PATCH", HttpRequest.BodyPublishers.ofString(body.toString()))
+          .build();
+      HttpResponse<InputStream> faqList = HttpClient.newHttpClient()
+          .send(faqListRequest, HttpResponse.BodyHandlers.ofInputStream());
+
+      if (faqList.statusCode() >= 300) {
+        throw new IllegalStateException("Failed to patch? Got %s - %s".formatted(faqList.statusCode(), new String(faqList.body().readAllBytes())));
+      }
+
+      var jp = new JsonParser();
+      JsonElement root = jp.parse(new InputStreamReader(faqList.body(), StandardCharsets.UTF_8));
+      JsonObject newFaqObject = root.getAsJsonObject();
+
+      invalidate();
+      return Optional.of(Topic.fromJson(newFaqObject));
+    } catch (IOException | InterruptedException e) {
+      e.printStackTrace();
+      return Optional.empty();
+    }
+  }
 
   public Optional<Topic> supabasePost(SupabaseConnection sb, String topic, UUID author) {
     try {
@@ -178,7 +222,7 @@ public class FaqCache extends SingleCache<ArrayList<Topic>> {
 
       var newTopic = Topic.fromJson(newFaqObject);
       // logging must be done after because we don't know the ID yet
-      logHistory(sb, newTopic.id(), Method.POST, Field.TOPIC, "", topic, author);
+      logHistory(sb, newTopic.id(), Method.POST, Field.TOPIC, null, topic, author);
 
       invalidate();
       return Optional.of(newTopic);

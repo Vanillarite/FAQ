@@ -1,9 +1,9 @@
 package com.vanillarite.faq.storage;
 
-import cloud.commandframework.types.tuples.Pair;
 import com.vanillarite.faq.AdventureEditorAPI;
 import com.vanillarite.faq.FaqPlugin;
 import com.vanillarite.faq.storage.supabase.Field;
+import com.vanillarite.faq.storage.supabase.Method;
 import com.vanillarite.faq.storage.supabase.SupabaseConnection;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
@@ -27,14 +27,11 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static com.vanillarite.faq.FaqPlugin.m;
-import static net.kyori.adventure.text.Component.empty;
-import static net.kyori.adventure.text.Component.text;
+import static net.kyori.adventure.text.Component.*;
 import static net.kyori.adventure.text.TextComponent.ofChildren;
-import static net.kyori.adventure.text.event.ClickEvent.openUrl;
-import static net.kyori.adventure.text.event.ClickEvent.suggestCommand;
+import static net.kyori.adventure.text.event.ClickEvent.*;
 import static net.kyori.adventure.text.event.HoverEvent.showText;
-import static net.kyori.adventure.text.format.NamedTextColor.GRAY;
-import static net.kyori.adventure.text.format.NamedTextColor.RED;
+import static net.kyori.adventure.text.format.NamedTextColor.*;
 import static net.kyori.adventure.text.format.TextDecoration.ITALIC;
 
 public class Manager {
@@ -59,6 +56,14 @@ public class Manager {
         section.getString("anon_key"),
         section.getString("auth_key")
     );
+  }
+
+  public boolean assertNoExisting(String candidate) {
+    return faqCache.invalidateAndGet().stream().anyMatch(i -> i.topic().equalsIgnoreCase(candidate) || i.alias().stream().anyMatch(a -> a.equalsIgnoreCase(candidate)));
+  }
+
+  public Optional<Topic> updateFaqArrayField(int id, Field key, Method method, String entry, CommandSender author) {
+    return faqCache.supabasePatchArray(supabase(), id, key, entry, method, getAuthor(author));
   }
 
   public Optional<Topic> updateFaqTopic(int id, Field key, String value, CommandSender author) {
@@ -116,22 +121,44 @@ public class Manager {
     return transform.apply(m.parse(Objects.requireNonNull(section.getString(kind))));
   }
 
-  public Component makeButtons(boolean noHover, Topic faq, Predicate<String> permissionChecker) throws ExecutionException, InterruptedException {
+  public List<Component> makeButtons(boolean noHover, Topic faq, Predicate<String> permissionChecker) throws ExecutionException, InterruptedException {
     var section = plugin.section("messages", "manage");
+    var rows = new ArrayList<Component>();
     var buttons = new ArrayList<Component>();
-    Function<String, Function<Component, Component>> cmd = (name) -> (c) -> c.clickEvent(suggestCommand(name.formatted(faq.id())));
+    Function<String, Function<Component, Component>> suggest = (name) -> (c) -> c.clickEvent(suggestCommand(name.formatted(faq.id())));
+    Function<String, Function<Component, Component>> cmd = (name) -> (c) -> c.clickEvent(runCommand(name.formatted(faq.id())));
+
     List.of(
-        Pair.of("content", makeEditorLink(noHover, faq, Field.CONTENT, section.getString("initial_placeholder"))),
-        Pair.of("preface", makeEditorLink(noHover, faq, Field.PREFACE, section.getString("initial_placeholder"))),
-        Pair.of("rename", cmd.apply("/faqeditor set %s topic ")),
-        Pair.of("delete", cmd.apply("/faqeditor delete %s"))
+        new ButtonType("content", makeEditorLink(noHover, faq, Field.CONTENT, section.getString("initial_placeholder"))),
+        new ButtonType("preface", makeEditorLink(noHover, faq, Field.PREFACE, section.getString("initial_placeholder"))),
+        new ButtonType("rename", suggest.apply("/faqeditor set %s topic ")),
+        new ButtonType("delete", "manage.delete", suggest.apply("/faqeditor delete %s")),
+        new ButtonType("history", "admin.history", cmd.apply("/faqeditor admin history %s"))
     ).forEach(i -> {
-      if (permissionChecker.test("vfaq.manage." + (i.getFirst().equals("delete") ? i.getFirst() : "edit." + i.getFirst()))) {
-        buttons.add(makeButton(i.getFirst(), i.getSecond()));
+      if (permissionChecker.test("vfaq." + i.permission())) {
+        buttons.add(makeButton(i.name(), i.factory()));
       }
     });
+    rows.add(ofChildren(buttons.toArray(new Component[0])));
+    buttons.clear();
 
-    return ofChildren(buttons.toArray(new Component[0]));
+    if (permissionChecker.test("vfaq.manage.edit.alias")) {
+      buttons.add(m.parse(Objects.requireNonNull(section.getString("alias.list")), Template.of("count", String.valueOf(faq.alias().size()))));
+      buttons.add(
+          m.parse(Objects.requireNonNull(section.getString("alias.add")))
+              .clickEvent(suggestCommand("/faqeditor set %s alias add ".formatted(faq.id())))
+      );
+      faq.alias().forEach(a -> {
+            buttons.add(space());
+            buttons.add(
+                m.parse(Objects.requireNonNull(section.getString("alias.remove")), Template.of("name", a))
+                    .clickEvent(suggestCommand("/faqeditor set %s alias remove %s".formatted(faq.id(), a)))
+            );
+          });
+    }
+    rows.add(ofChildren(buttons.toArray(new Component[0])));
+
+    return rows;
   }
 
   public void showFaqList(CommandSender sender, String command) {
@@ -213,6 +240,12 @@ public class Manager {
 
   public UUID getAuthor(CommandSender sender) {
     return (sender instanceof Player p) ? p.getUniqueId() : NULL_UUID;
+  }
+
+  private record ButtonType(String name, String permission, Function<Component, Component> factory) {
+    private ButtonType(String name, Function<Component, Component> factory) {
+      this(name, "manage.edit." + name, factory);
+    }
   }
 }
 

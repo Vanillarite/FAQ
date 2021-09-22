@@ -41,7 +41,16 @@ public record Topic(
       case CONTENT -> content;
       case PREFACE -> preface;
       case TOPIC -> topic;
+      case ALIAS -> alias.toString();
+      default -> throw new IllegalArgumentException("%s isn't implemented".formatted(field));
     };
+  }
+
+  public ArrayList<String> findArrayField(Field field) {
+    return new ArrayList<>(switch (field) {
+      case ALIAS -> alias;
+      default -> throw new IllegalArgumentException("%s isn't an array field".formatted(field));
+    });
   }
 
   public SmartPreface smartPreface(int maxLines) {

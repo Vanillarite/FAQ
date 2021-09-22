@@ -12,6 +12,7 @@ import com.github.difflib.text.DiffRowGenerator;
 import com.vanillarite.faq.storage.Manager;
 import com.vanillarite.faq.storage.Topic;
 import com.vanillarite.faq.storage.supabase.Field;
+import com.vanillarite.faq.storage.supabase.Method;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.Template;
 import org.bukkit.command.CommandSender;
@@ -22,6 +23,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Consumer;
 
 import static com.vanillarite.faq.FaqPlugin.m;
 import static com.vanillarite.faq.util.DurationUtil.formatInstantToNow;
@@ -60,7 +62,7 @@ public class Commands {
     var section = plugin.section("messages");
     var prefix = plugin.prefixFor(sender, "faq");
 
-    manager.cache().findIgnoreEmpty(topic).ifPresentOrElse(
+    manager.cache().findTopicOrAlias(topic).ifPresentOrElse(
         (t) -> prefix.response(
             section.getString("header") + "<r>\n\n" + t.content() + "\n",
             Template.of("topic", t.topic())
@@ -90,7 +92,7 @@ public class Commands {
     var prefix = plugin.prefixFor(sender, "faq");
     var prefix4u = plugin.prefixFor(sender, "faq4u");
 
-    manager.cache().findIgnoreEmpty(topic).ifPresentOrElse(
+    manager.cache().findTopicOrAlias(topic).ifPresentOrElse(
         (t) -> {
           var preface = t.smartPreface(section.getInt("max_preview_lines"));
           var keepReading = showText(
@@ -125,8 +127,8 @@ public class Commands {
     var prefix = plugin.prefixFor(sender, "editor");
     var section = plugin.section("messages", "manage");
 
-    if (manager.cache().invalidateAndGet().stream().anyMatch(i -> i.topic().equalsIgnoreCase(topicName))) {
-      prefix.logged(text("This name cannot be used because it would have the same name as an already existing topic", RED));
+    if (manager.assertNoExisting(topicName)) {
+      prefix.logged(text("This name cannot be used because it would have the same name as an already existing topic or alias", RED));
       return;
     }
 
@@ -189,8 +191,7 @@ public class Commands {
 
     try {
       prefix.response(section.getString("header"), Template.of("topic", existing.topic()));
-      prefix.response(manager.makeButtons((sender instanceof ConsoleCommandSender), existing, sender::hasPermission));
-      prefix.response(text("Aliases: (%s) ".formatted(existing.alias().size())).append(text(existing.alias().toString())));
+      manager.makeButtons((sender instanceof ConsoleCommandSender), existing, sender::hasPermission).forEach(prefix::response);
       prefix.response(Component.empty());
     } catch (ExecutionException | InterruptedException e) {
       prefix.logged(text("Failed?", RED));
@@ -231,8 +232,8 @@ public class Commands {
   ) {
     var prefix = plugin.prefixFor(sender, "editor");
 
-    if (manager.cache().invalidateAndGet().stream().anyMatch(i -> i.topic().equalsIgnoreCase(newTopic))) {
-      prefix.logged(text("This name cannot be used because it would have the same name as an already existing topic", RED));
+    if (manager.assertNoExisting(newTopic)) {
+      prefix.logged(text("This name cannot be used because it would have the same name as an already existing topic or alias", RED));
       return;
     }
 
@@ -242,6 +243,49 @@ public class Commands {
     modified.ifPresentOrElse(
         faqTopic -> prefix.logged(text("Success! TOPIC of #%s was modified (now %s)".formatted(id, faqTopic.topic()))),
         () -> prefix.logged(text("Saving new TOPIC failed?", RED))
+    );
+  }
+
+  @CommandDescription("Add new alias to a FAQ")
+  @CommandMethod("faqeditor set <id> alias add <new_alias>")
+  @CommandPermission("vfaq.manage.edit.alias")
+  private void commandFaqAddAlias(
+      final @NotNull CommandSender sender,
+      final @Argument("id") int id,
+      final @NotNull @Argument("new_alias") @Greedy String newAlias
+  ) {
+    var prefix = plugin.prefixFor(sender, "editor");
+
+    if (manager.assertNoExisting(newAlias)) {
+      prefix.logged(text("This alias cannot be used because it would have the same name as an already existing topic or alias", RED));
+      return;
+    }
+
+    prefix.response(text("Processing change...", GRAY, ITALIC));
+
+    var modified = manager.updateFaqArrayField(id, Field.ALIAS, Method.POST, newAlias, sender);
+    modified.ifPresentOrElse(
+        faqTopic -> prefix.logged(text("Success! ALIAS of #%s was modified (now %s: %s)".formatted(id, faqTopic.alias().size(), faqTopic.alias()))),
+        () -> prefix.logged(text("Saving new ALIAS failed?", RED))
+    );
+  }
+
+  @CommandDescription("Remove alias from a FAQ")
+  @CommandMethod("faqeditor set <id> alias remove <alias_name>")
+  @CommandPermission("vfaq.manage.edit.alias")
+  private void commandFaqRemoveAlias(
+      final @NotNull CommandSender sender,
+      final @Argument("id") int id,
+      final @NotNull @Argument("alias_name") @Greedy String aliasName
+  ) {
+    var prefix = plugin.prefixFor(sender, "editor");
+
+    prefix.response(text("Processing change...", GRAY, ITALIC));
+
+    var modified = manager.updateFaqArrayField(id, Field.ALIAS, Method.DELETE, aliasName, sender);
+    modified.ifPresentOrElse(
+        faqTopic -> prefix.logged(text("Success! ALIAS of #%s was modified (now %s: %s)".formatted(id, faqTopic.alias().size(), faqTopic.alias()))),
+        () -> prefix.logged(text("Saving new ALIAS failed?", RED))
     );
   }
 

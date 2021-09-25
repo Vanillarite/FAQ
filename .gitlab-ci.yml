@@ -22,7 +22,7 @@ build:
       - $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
   artifacts:
     paths:
-      - VanillariteFAQ-*.jar
+      - VanillariteFAQ.jar
 
 
 verify:

@@ -83,7 +83,7 @@ public class Commands {
 
   @CommandDescription("Show everyone else a topic from the FAQ")
   @CommandMethod("faq4u <topic>")
-  @CommandPermission("vfaq.faq")
+  @CommandPermission("vfaq.faq4u")
   private void commandFaqForYou(
       final @NotNull CommandSender sender,
       final @NotNull @Argument(value = "topic", suggestions = "faqTopicsAll") @Greedy String topic

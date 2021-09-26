@@ -19,6 +19,7 @@ public record Topic(
     String content,
     @Nullable String preface,
     List<String> alias,
+    Pos pos,
     UUID author,
     Instant createdAt,
     Instant updatedAt
@@ -30,6 +31,10 @@ public record Topic(
         json.get("content").getAsString(),
         json.get("preface").isJsonNull() ? null : json.get("preface").getAsString(),
         Streams.stream(json.get("alias").getAsJsonArray().iterator()).map(JsonElement::getAsString).toList(),
+        new Pos(
+            json.get("pos").getAsJsonObject().get("line").getAsInt(),
+            json.get("pos").getAsJsonObject().get("col").getAsInt()
+        ),
         UUID.fromString(json.get("author").getAsString()),
         OffsetDateTime.parse(json.get("created_at").getAsString()).toInstant(),
         OffsetDateTime.parse(json.get("updated_at").getAsString()).toInstant()
@@ -42,7 +47,8 @@ public record Topic(
       case PREFACE -> preface;
       case TOPIC -> topic;
       case ALIAS -> alias.toString();
-      default -> throw new IllegalArgumentException("%s isn't implemented".formatted(field));
+      case POS -> pos.tuple();
+      // default -> throw new IllegalArgumentException("%s isn't implemented".formatted(field));
     };
   }
 
@@ -76,6 +82,24 @@ public record Topic(
   public record SmartPreface(boolean isPreview, boolean isContinuable, List<String> lines) {
     public SmartPreface(boolean isContinuable, String[] lines) {
       this(false, isContinuable, Arrays.asList(lines));
+    }
+  }
+
+  public record Pos(int line, int col) {
+    public JsonObject toJson() {
+      var jsonObject = new JsonObject();
+      jsonObject.addProperty("line", line);
+      jsonObject.addProperty("col", col);
+      return jsonObject;
+    }
+
+    public String tuple() {
+      return "(%s,%s)".formatted(line, col);
+    }
+
+    public static Pos fromTuple(String tuple) {
+      var split = tuple.substring(1, tuple.length() - 1).split(",");
+      return new Pos(Integer.parseInt(split[0]), Integer.parseInt(split[1]));
     }
   }
 }

@@ -1,3 +1,3 @@
 package com.vanillarite.faq.storage.supabase;
 
-public enum Field { CONTENT, PREFACE, TOPIC, ALIAS, GROUP }
+public enum Field { CONTENT, PREFACE, TOPIC, ALIAS, GROUP, POS }

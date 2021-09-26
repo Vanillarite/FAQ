@@ -9,11 +9,14 @@ import cloud.commandframework.annotations.suggestions.Suggestions;
 import cloud.commandframework.context.CommandContext;
 import com.github.difflib.algorithm.DiffException;
 import com.github.difflib.text.DiffRowGenerator;
+import com.google.gson.JsonObject;
 import com.vanillarite.faq.storage.Manager;
 import com.vanillarite.faq.storage.Topic;
 import com.vanillarite.faq.storage.supabase.Field;
 import com.vanillarite.faq.storage.supabase.Method;
+import com.vanillarite.faq.text.list.FaqLister;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.minimessage.Template;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
@@ -23,10 +26,12 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 import static com.vanillarite.faq.FaqPlugin.m;
 import static com.vanillarite.faq.util.DurationUtil.formatInstantToNow;
+import static net.kyori.adventure.text.Component.empty;
 import static net.kyori.adventure.text.Component.text;
 import static net.kyori.adventure.text.event.ClickEvent.runCommand;
 import static net.kyori.adventure.text.event.HoverEvent.showText;
@@ -49,7 +54,14 @@ public class Commands {
   private void commandFaqNoArgs(
       final @NotNull CommandSender sender
   ) {
-    manager.showFaqList(sender, "faq");
+    var prefix = plugin.prefixFor(sender, "faq");
+    new FaqLister(
+        "faq",
+        "faq",
+        plugin, manager.cache(),
+        (g) -> sender.hasPermission("vfaq.group." + g),
+        prefix::response
+    ).run();
   }
 
   @CommandDescription("View a topic from the FAQ")
@@ -77,7 +89,14 @@ public class Commands {
   private void commandFaqForYouNoArgs(
       final @NotNull CommandSender sender
   ) {
-    manager.showFaqList(sender, "faq4u");
+    var prefix = plugin.prefixFor(sender, "faq4u");
+    new FaqLister(
+        "faq4u",
+        "faq4u",
+        plugin, manager.cache(),
+        (g) -> false,
+        prefix::response
+    ).run();
   }
 
 
@@ -165,7 +184,8 @@ public class Commands {
         section.getString("line") + (topic.content().isBlank() ? section.getString("incomplete") : ""),
         Template.of("id", String.valueOf(topic.id())),
         Template.of("topic", String.valueOf(topic.topic())),
-        Template.of("author", Manager.resolveAuthor(topic.author())),
+        Template.of("author", Manager.componentAuthor(topic.author())),
+        Template.of("author_uuid", topic.author().toString()),
         Template.of("created_ago", formatInstantToNow(topic.createdAt())),
         Template.of("updated_ago", formatInstantToNow(topic.updatedAt())),
         Template.of("edit_button", m.parse(Objects.requireNonNull(section.getString("edit_label")))
@@ -289,7 +309,72 @@ public class Commands {
     );
   }
 
-  @CommandDescription("Set new topic to a FAQ")
+  @CommandDescription("Reposition a FAQ")
+  @CommandMethod("faqeditor set <id> positionmenu")
+  @CommandPermission("vfaq.manage.edit.move")
+  private void commandFaqAddAlias(
+      final @NotNull CommandSender sender,
+      final @Argument("id") int id
+  ) {
+    var prefix = plugin.prefixFor(sender, "editor");
+
+    var lastPos = new AtomicReference<Topic.Pos>(null);
+    var existing = manager.cache().findNow(id);
+    var lister = new FaqLister(
+        "faq",
+        "faq",
+        plugin, manager.cache(),
+        (g) -> sender.hasPermission("vfaq.group." + g),
+        (line) -> prefix.response(
+            line
+                .clickEvent(ClickEvent.runCommand("/faqeditor set %s pos %s %s".formatted(id, lastPos.get().line(), lastPos.get().col() + 1)))
+                .hoverEvent(showText(text("Click to add to the end of this row")))
+        )
+    );
+    var relevantGroup = lister.topicGroupOf(existing.group());
+    lister.emitTopicGroup(
+        relevantGroup.stream().filter(i -> i.pos().line() != 0).toList(),
+        (faq) -> {
+          lastPos.set(faq.pos());
+          return m.parse(
+              Objects.requireNonNull(lister.section.getString("each_topic")),
+              Template.of("topic", faq.topic())
+          );
+        }
+    );
+    prefix.response(empty()
+        .append(text("[New row]", GREEN)
+            .clickEvent(ClickEvent.runCommand("/faqeditor set %s pos %s %s".formatted(
+                id, lastPos.get().line() + 1, 1
+            ))))
+        .append(text("[Remove custom position]", RED)
+            .clickEvent(ClickEvent.runCommand("/faqeditor set %s pos 0 0".formatted(id)))
+        )
+    );
+  }
+
+  @CommandDescription("Move a FAQ")
+  @CommandMethod("faqeditor set <id> pos <line> <col>")
+  @CommandPermission("vfaq.manage.edit.move")
+  private void commandFaqRemoveAlias(
+      final @NotNull CommandSender sender,
+      final @Argument("id") int id,
+      final @Argument("line") int line,
+      final @Argument("col") int col
+  ) {
+    var prefix = plugin.prefixFor(sender, "editor");
+
+    prefix.response(text("Processing change...", GRAY, ITALIC));
+    var newPos = new Topic.Pos(line, col);
+
+    var modified = manager.updateFaqComplex(id, Field.POS, newPos.tuple(), newPos.toJson(), sender);
+    modified.ifPresentOrElse(
+        faqTopic -> prefix.logged(text("Success! POS of #%s was modified (now %s)".formatted(id, faqTopic.pos().tuple()))),
+        () -> prefix.logged(text("Saving new POS failed?", RED))
+    );
+  }
+
+  @CommandDescription("Delete FAQ")
   @CommandMethod("faqeditor delete <id>")
   @CommandPermission("vfaq.manage.delete")
   private void commandFaqDeleteTopic(

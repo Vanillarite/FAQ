@@ -7,7 +7,6 @@ import com.vanillarite.faq.util.DurationUtil;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.format.TextColor;
-import org.bukkit.Bukkit;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -18,7 +17,6 @@ import java.util.UUID;
 import java.util.function.Supplier;
 
 import static com.vanillarite.faq.FaqPlugin.m;
-import static com.vanillarite.faq.storage.Manager.NULL_UUID;
 import static net.kyori.adventure.text.Component.space;
 import static net.kyori.adventure.text.Component.text;
 import static net.kyori.adventure.text.event.ClickEvent.runCommand;
@@ -63,7 +61,13 @@ public record History(
   }
 
   public Component fieldAwareContent(Supplier<String> supplier, boolean concise) {
-    if (field == Field.TOPIC || field == Field.ALIAS) {
+    if (field == Field.POS) {
+      var pos = Topic.Pos.fromTuple(supplier.get());
+      if (pos.line() == 0)
+        return text("automatic", GRAY, ITALIC);
+      else
+        return text("(%s, %s)".formatted(pos.line(), pos.col()));
+    } else if (field == Field.TOPIC || field == Field.ALIAS) {
       return text(supplier.get(), style(ITALIC));
     } else {
       return text((concise ? "%s" : "%s chars").formatted(supplier.get().length()), style(ITALIC)).hoverEvent(showText(m.parse(supplier.get())));
@@ -85,7 +89,7 @@ public record History(
         text(DurationUtil.formatInstantToNow(timestamp), TextColor.fromHexString("#BDF9FC")),
         text(" ago", GRAY)
     );
-    if (field != Field.TOPIC && method == Method.PATCH && !beforeOrBlank().isBlank() && !after.isBlank()) {
+    if ((field == Field.PREFACE || field == Field.CONTENT) && method == Method.PATCH && !beforeOrBlank().isBlank() && !after.isBlank()) {
       component = component.append(
           text(" [inspect]", RED)
               .hoverEvent(showText(text("Click to inspect differences")))
@@ -96,13 +100,7 @@ public record History(
   }
 
   public Component componentAuthor() {
-    if (author.equals(NULL_UUID)) return text("SYSTEM", DARK_PURPLE);
-    var player = Bukkit.getOfflinePlayer(author).getName();
-    if (player == null) {
-      return text("Unknown", DARK_RED);
-    } else {
-      return text(player, GOLD);
-    }
+    return Manager.componentAuthor(author);
   }
 
   public String asSmallNumbers(int integer, int pad) {
@@ -152,6 +150,7 @@ public record History(
       case TOPIC -> symbolic("Ⓣ", "Topic", YELLOW);
       case ALIAS -> symbolic("Ⓐ", "Alias", WHITE);
       case GROUP -> symbolic("Ⓖ", "Group", LIGHT_PURPLE);
+      case POS -> symbolic("Ⓟ", "Position", GOLD);
     };
   }
 }

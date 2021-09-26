@@ -1,12 +1,13 @@
 package com.vanillarite.faq.storage;
 
+import com.google.gson.JsonElement;
 import com.vanillarite.faq.AdventureEditorAPI;
 import com.vanillarite.faq.FaqPlugin;
 import com.vanillarite.faq.storage.supabase.Field;
 import com.vanillarite.faq.storage.supabase.Method;
 import com.vanillarite.faq.storage.supabase.SupabaseConnection;
+import com.vanillarite.faq.text.list.FaqLister;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.minimessage.Template;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
@@ -64,6 +65,10 @@ public class Manager {
 
   public Optional<Topic> updateFaqArrayField(int id, Field key, Method method, String entry, CommandSender author) {
     return faqCache.supabasePatchArray(supabase(), id, key, entry, method, getAuthor(author));
+  }
+
+  public Optional<Topic> updateFaqComplex(int id, Field key, String value, JsonElement element, CommandSender author) {
+    return faqCache.supabasePatchComplex(supabase(), id, key, value, element, getAuthor(author));
   }
 
   public Optional<Topic> updateFaqTopic(int id, Field key, String value, CommandSender author) {
@@ -132,6 +137,7 @@ public class Manager {
         new ButtonType("content", makeEditorLink(noHover, faq, Field.CONTENT, section.getString("initial_placeholder"))),
         new ButtonType("preface", makeEditorLink(noHover, faq, Field.PREFACE, section.getString("initial_placeholder"))),
         new ButtonType("rename", suggest.apply("/faqeditor set %s topic ")),
+        new ButtonType("move", cmd.apply("/faqeditor set %s positionmenu")),
         new ButtonType("delete", "manage.delete", suggest.apply("/faqeditor delete %s")),
         new ButtonType("history", "admin.history", cmd.apply("/faqeditor admin history %s"))
     ).forEach(i -> {
@@ -159,43 +165,6 @@ public class Manager {
     rows.add(ofChildren(buttons.toArray(new Component[0])));
 
     return rows;
-  }
-
-  public void showFaqList(CommandSender sender, String command) {
-    var section = plugin.section("messages", "list", command);
-    var prefix = plugin.prefixFor(sender, command);
-    prefix.logged(section.getString("header"));
-
-    var topics = new ArrayList<Component>();
-    Runnable emitLine = () -> {
-      if (topics.size() > 0) {
-        prefix.response(ofChildren(
-            m.parse(Objects.requireNonNull(section.getString("prefix"))),
-            ofChildren(topics.toArray(new Component[0]))
-        ));
-        topics.clear();
-      }
-    };
-
-    var maxPerLine = section.getInt("max_per_line");
-
-    faqCache.getIgnoreEmpty().forEach((faq) -> {
-      if (topics.size() + 1 > maxPerLine) emitLine.run();
-
-      topics.add(
-          m.parse(Objects.requireNonNull(section.getString("each_topic")),
-              Template.of("topic", faq.topic())
-          ).clickEvent(
-              ClickEvent.runCommand("/" + command + " " + faq.topic())
-          ).hoverEvent(
-              showText(
-                  m.parse(Objects.requireNonNull(section.getString("hover")), Template.of("topic", faq.topic()))
-              )
-          )
-      );
-    });
-    emitLine.run();
-    prefix.response(empty());
   }
 
   public void applyEditor(CommandSender sender, int id, String token, Field field) {
@@ -232,10 +201,14 @@ public class Manager {
   }
 
 
-  public static String resolveAuthor(UUID author) {
-    if (author.equals(NULL_UUID)) return "SYSTEM";
-    var player = Bukkit.getOfflinePlayer(author);
-    return Objects.requireNonNullElse(player.getName(), "Unknown user " + author);
+  public static Component componentAuthor(UUID author) {
+    if (author.equals(NULL_UUID)) return text("SYSTEM", DARK_PURPLE);
+    var player = Bukkit.getOfflinePlayer(author).getName();
+    if (player == null) {
+      return text("Unknown", DARK_RED);
+    } else {
+      return text(player, GOLD);
+    }
   }
 
   public UUID getAuthor(CommandSender sender) {

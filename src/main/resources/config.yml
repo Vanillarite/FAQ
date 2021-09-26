@@ -7,26 +7,30 @@ prefix:
 
 messages:
   list:
+    default_group: global
+    group_separator: "<b><light_purple><group> FAQ:<light_purple>"
     faq:
       header: "<gold>Click on a topic to learn more about it!</gold>"
       prefix: "<light_purple><b>•<r> "
       each_topic: "<black>[<aqua><topic></aqua>]</black>  "
       hover: "<gold>Click here to learn more about <b><topic></b></gold>"
-      max_per_line: 5
+      max_per_line: 4
     faq4u:
       header: "<gold>Click on a topic to <b>broadcast it and educate others</b> about it!</gold>"
       prefix: "<red><b>•<r> "
       each_topic: "<white>[<dark_aqua><topic></dark_aqua>]</white>  "
       hover: "<gold>Click here to educate others about <b><topic></b></gold>"
-      max_per_line: 5
+      max_per_line: 4
   manage:
     initial_placeholder: '<#BDF9FC>Edit me...'
     edit:
-      header: "<gold>Click on a button below to edit <i><topic></i>. Note that these links are <underlined>one time use</underlined> only</gold>"
+      header: "<gold>Click on a button below to edit <i><topic></i>. Note that some of these links are <u>one time use</u> only</gold>"
       button:
         content: "<hover:show_text:'Click to change the full content'><aqua>[Content]</aqua></hover>"
         preface: "<hover:show_text:'Click to change the FAQ4U preface (or leave blank to remove)'><dark_aqua>[Preface]</dark_aqua>"
         rename: "<hover:show_text:'Click to rename the topic'><yellow>[Rename]</yellow>"
+        move: "<hover:show_text:'Click to reposition this topic'><gold>[Move]</gold>"
+        group: "<hover:show_text:'Click to set a permission group for this topic'><dark_purple>[Group]</dark_purple>"
         delete: "<hover:show_text:'<red>⚠ Click to delete the FAQ topic. ⚠</red>'><red>[Delete]</red>"
         history: "<hover:show_text:'Click to see all changes made to this topic'><b>[History]</b>"
     list:
@@ -42,7 +46,7 @@ messages:
           empty: "<dark_gray>[P×]</dark_gray>"
       line: "<edit_button> <preview_content> <preview_preface> #<b><id></b> <gray>:</gray>
         <i><topic></i> <gray>by</gray>
-        <hover:show_text:'Created <created_ago> ago\nModified <updated_ago> ago'><gold><author></gold></hover>."
+        <hover:show_text:'Created <created_ago> ago\nModified <updated_ago> ago\n<author_uuid>'><gold><author></gold></hover>."
     alias:
       list: "<count> aliases: "
       add: "<hover:show_text:'Click to add new alias'><green>[+]</green></hover>"

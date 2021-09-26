@@ -9,7 +9,6 @@ import com.vanillarite.faq.storage.supabase.Field;
 import com.vanillarite.faq.storage.supabase.Method;
 import com.vanillarite.faq.storage.supabase.SupabaseConnection;
 import com.vanillarite.faq.util.SingleCache;
-import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -19,7 +18,6 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.Callable;
@@ -136,6 +134,36 @@ public class FaqCache extends SingleCache<ArrayList<Topic>> {
 
       var body = new JsonObject();
       body.addProperty(key.name().toLowerCase(), newValue);
+
+      HttpRequest faqListRequest = sb.single("faqs?active=is.true&id=eq." + id)
+          .method("PATCH", HttpRequest.BodyPublishers.ofString(body.toString()))
+          .build();
+      HttpResponse<InputStream> faqList = HttpClient.newHttpClient()
+          .send(faqListRequest, HttpResponse.BodyHandlers.ofInputStream());
+
+      if (faqList.statusCode() >= 300) {
+        throw new IllegalStateException("Failed to patch? Got %s - %s".formatted(faqList.statusCode(), new String(faqList.body().readAllBytes())));
+      }
+
+      var jp = new JsonParser();
+      JsonElement root = jp.parse(new InputStreamReader(faqList.body(), StandardCharsets.UTF_8));
+      JsonObject newFaqObject = root.getAsJsonObject();
+
+      invalidate();
+      return Optional.of(Topic.fromJson(newFaqObject));
+    } catch (IOException | InterruptedException e) {
+      e.printStackTrace();
+      return Optional.empty();
+    }
+  }
+
+  public Optional<Topic> supabasePatchComplex(SupabaseConnection sb, int id, Field key, String newValue, JsonElement element, UUID author) {
+    try {
+      var existing = findNow(id);
+      logHistory(sb, id, Method.PATCH, key, existing.findField(key), newValue, author);
+
+      var body = new JsonObject();
+      body.add(key.name().toLowerCase(), element);
 
       HttpRequest faqListRequest = sb.single("faqs?active=is.true&id=eq." + id)
           .method("PATCH", HttpRequest.BodyPublishers.ofString(body.toString()))

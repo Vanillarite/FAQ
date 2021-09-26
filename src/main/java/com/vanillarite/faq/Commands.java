@@ -112,7 +112,7 @@ public class Commands {
   @CommandPermission("vfaq.faq4u")
   private void commandFaqForYou(
       final @NotNull CommandSender sender,
-      final @NotNull @Argument(value = "topic", suggestions = "faqTopicsAll") @Greedy String topic
+      final @NotNull @Argument(value = "topic", suggestions = "faqTopicsDefault") @Greedy String topic
   ) {
     var section = plugin.section("messages");
     var prefix = plugin.prefixFor(sender, "faq");
@@ -498,6 +498,20 @@ public class Commands {
     var defaultGroup = section.getString("default_group");
     return manager.cache().get().stream()
         .filter(t -> t.group().equals(defaultGroup) || sender.getSender().hasPermission("vfaq.group." + t.group()))
+        .mapMulti((Topic i, Consumer<String> r) -> {
+          r.accept(i.topic());
+          i.alias().forEach(r);
+        })
+        .filter(t -> t.toLowerCase().startsWith(input.toLowerCase()))
+        .limit(20).toList();
+  }
+
+  @Suggestions("faqTopicsDefault")
+  public @NotNull List<String> completeFaqTopicsDefault(CommandContext<CommandSender> sender, String input) {
+    var section = plugin.section("messages", "list");
+    var defaultGroup = section.getString("default_group");
+    return manager.cache().get().stream()
+        .filter(t -> t.group().equals(defaultGroup))
         .mapMulti((Topic i, Consumer<String> r) -> {
           r.accept(i.topic());
           i.alias().forEach(r);

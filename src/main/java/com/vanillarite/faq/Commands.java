@@ -352,7 +352,7 @@ public class Commands {
   ) {
     var prefix = plugin.prefixFor(sender, "editor");
 
-    var lastPos = new AtomicReference<Topic.Pos>(null);
+    var lastPos = new AtomicReference<>(new Topic.Pos(0, 0));
     var existing = manager.cache().findNow(id);
     var lister = new FaqLister(
         "faq",

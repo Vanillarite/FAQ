@@ -136,6 +136,7 @@ public class Manager {
     List.of(
         new ButtonType("content", makeEditorLink(noHover, faq, Field.CONTENT, section.getString("initial_placeholder"))),
         new ButtonType("preface", makeEditorLink(noHover, faq, Field.PREFACE, section.getString("initial_placeholder"))),
+        new ButtonType("group", suggest.apply("/faqeditor set %s group ")),
         new ButtonType("rename", suggest.apply("/faqeditor set %s topic ")),
         new ButtonType("move", cmd.apply("/faqeditor set %s positionmenu")),
         new ButtonType("delete", "manage.delete", suggest.apply("/faqeditor delete %s")),

@@ -266,6 +266,40 @@ public class Commands {
     );
   }
 
+  @CommandDescription("Set group of a FAQ")
+  @CommandMethod("faqeditor set <id> group [new_group]")
+  @CommandPermission("vfaq.manage.edit.group")
+  private void commandFaqEditGroup(
+      final @NotNull CommandSender sender,
+      final @Argument("id") int id,
+      final @Argument("new_group") @Greedy String groupName
+  ) {
+    var prefix = plugin.prefixFor(sender, "editor");
+    var section = plugin.section("messages", "list");
+
+    var cleanGroupName = groupName;
+    if (groupName == null || groupName.isBlank()) {
+      cleanGroupName = section.getString("default_group");
+    }
+
+    prefix.response(text("Processing change...", GRAY, ITALIC));
+
+    var modified = manager.updateFaqTopic(id, Field.GROUP, cleanGroupName, sender);
+    modified.ifPresentOrElse(
+        faqTopic -> prefix.logged(text("Success! GROUP of #%s was modified (now %s)".formatted(id, faqTopic.group()))),
+        () -> prefix.logged(text("Saving new GROUP failed?", RED))
+    );
+  }
+
+  @CommandDescription("yes")
+  @CommandMethod("faqeditor debug dump")
+  @CommandPermission("vfaq.admin.debug")
+  private void commandFaqDebug(
+      final @NotNull CommandSender sender
+  ) {
+    sender.sendMessage(manager.cache().invalidateAndGet().toString());
+  }
+
   @CommandDescription("Add new alias to a FAQ")
   @CommandMethod("faqeditor set <id> alias add <new_alias>")
   @CommandPermission("vfaq.manage.edit.alias")

@@ -494,11 +494,15 @@ public class Commands {
 
   @Suggestions("faqTopicsAll")
   public @NotNull List<String> completeFaqTopicsAll(CommandContext<CommandSender> sender, String input) {
-    return manager.cache().get().stream().mapMulti((Topic i, Consumer<String> r) -> {
-      r.accept(i.topic());
-      i.alias().forEach(r);
-    }).filter(
-        t -> t.toLowerCase().startsWith(input.toLowerCase())
-    ).limit(20).toList();
+    var section = plugin.section("messages", "list");
+    var defaultGroup = section.getString("default_group");
+    return manager.cache().get().stream()
+        .filter(t -> t.group().equals(defaultGroup) || sender.getSender().hasPermission("vfaq.group." + t.group()))
+        .mapMulti((Topic i, Consumer<String> r) -> {
+          r.accept(i.topic());
+          i.alias().forEach(r);
+        })
+        .filter(t -> t.toLowerCase().startsWith(input.toLowerCase()))
+        .limit(20).toList();
   }
 }

@@ -19,6 +19,7 @@ public record Topic(
     String content,
     @Nullable String preface,
     List<String> alias,
+    String group,
     Pos pos,
     UUID author,
     Instant createdAt,
@@ -31,6 +32,7 @@ public record Topic(
         json.get("content").getAsString(),
         json.get("preface").isJsonNull() ? null : json.get("preface").getAsString(),
         Streams.stream(json.get("alias").getAsJsonArray().iterator()).map(JsonElement::getAsString).toList(),
+        json.get("group").getAsString(),
         new Pos(
             json.get("pos").getAsJsonObject().get("line").getAsInt(),
             json.get("pos").getAsJsonObject().get("col").getAsInt()
@@ -47,6 +49,7 @@ public record Topic(
       case PREFACE -> preface;
       case TOPIC -> topic;
       case ALIAS -> alias.toString();
+      case GROUP -> group;
       case POS -> pos.tuple();
       // default -> throw new IllegalArgumentException("%s isn't implemented".formatted(field));
     };

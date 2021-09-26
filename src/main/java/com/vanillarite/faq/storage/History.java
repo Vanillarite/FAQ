@@ -67,7 +67,7 @@ public record History(
         return text("automatic", GRAY, ITALIC);
       else
         return text("(%s, %s)".formatted(pos.line(), pos.col()));
-    } else if (field == Field.TOPIC || field == Field.ALIAS) {
+    } else if (field == Field.TOPIC || field == Field.ALIAS || field == Field.GROUP) {
       return text(supplier.get(), style(ITALIC));
     } else {
       return text((concise ? "%s" : "%s chars").formatted(supplier.get().length()), style(ITALIC)).hoverEvent(showText(m.parse(supplier.get())));

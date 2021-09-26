@@ -73,12 +73,19 @@ public class Commands {
   ) {
     var section = plugin.section("messages");
     var prefix = plugin.prefixFor(sender, "faq");
+    var defaultGroup = section.getString("list.default_group");
 
     manager.cache().findTopicOrAlias(topic).ifPresentOrElse(
-        (t) -> prefix.response(
-            section.getString("header") + "<r>\n\n" + t.content() + "\n",
-            Template.of("topic", t.topic())
-        ),
+        (t) -> {
+          if (t.group().equals(defaultGroup) || sender.hasPermission("vfaq.group." + t.group())) {
+            prefix.response(
+                section.getString("header") + "<r>\n\n" + t.content() + "\n",
+                Template.of("topic", t.topic())
+            );
+          } else {
+            prefix.logged(section.getString("unknown_topic"));
+          }
+        },
         () -> prefix.logged(section.getString("unknown_topic"))
     );
   }
@@ -110,9 +117,14 @@ public class Commands {
     var section = plugin.section("messages");
     var prefix = plugin.prefixFor(sender, "faq");
     var prefix4u = plugin.prefixFor(sender, "faq4u");
+    var defaultGroup = section.getString("list.default_group");
 
     manager.cache().findTopicOrAlias(topic).ifPresentOrElse(
         (t) -> {
+          if (!t.group().equals(defaultGroup)) {
+            prefix4u.response(text("This topic can't be used because it's locked behind a permission", RED));
+            return;
+          }
           var preface = t.smartPreface(section.getInt("max_preview_lines"));
           var keepReading = showText(
               m.parse(Objects.requireNonNull(section.getString("keep_reading_hover")), Template.of("topic", t.topic()))

@@ -60,6 +60,7 @@ public class Manager {
   }
 
   public boolean assertNoExisting(String candidate) {
+    if (candidate.contains("~.")) return true;
     return faqCache.invalidateAndGet().stream().anyMatch(i -> i.topic().equalsIgnoreCase(candidate) || i.alias().stream().anyMatch(a -> a.equalsIgnoreCase(candidate)));
   }
 

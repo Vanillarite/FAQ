@@ -273,6 +273,7 @@ public class FaqCache extends SingleCache<ArrayList<Topic>> {
 
       var body = new JsonObject();
       body.addProperty("active", false);
+      body.addProperty("topic", "~." + System.currentTimeMillis() + "." + existing.topic());
 
       HttpRequest faqListRequest = sb.single("faqs?active=is.true&id=eq." + id)
           .method("PATCH", HttpRequest.BodyPublishers.ofString(body.toString()))

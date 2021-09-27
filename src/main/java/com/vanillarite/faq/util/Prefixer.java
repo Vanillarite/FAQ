@@ -9,6 +9,8 @@ import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.List;
+
 import static com.vanillarite.faq.FaqPlugin.m;
 
 public class Prefixer {
@@ -56,6 +58,10 @@ public class Prefixer {
     return m.parse(miniMessagePrefix + miniMessage, templates);
   }
 
+  public Component component(String miniMessage, List<Template> templates) {
+    return m.parse(miniMessagePrefix + miniMessage, templates);
+  }
+
   public void logged(String miniMessage, Template... templates) {
     loggedSend(component(miniMessage, templates));
   }
@@ -64,5 +70,8 @@ public class Prefixer {
     sender.sendMessage(component(miniMessage, templates));
   }
 
+  public void response(String miniMessage, List<Template> templates) {
+    sender.sendMessage(component(miniMessage, templates));
+  }
 }
 

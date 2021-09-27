@@ -126,7 +126,7 @@ public class Manager {
     return transform.apply(m.parse(Objects.requireNonNull(section.getString(kind))));
   }
 
-  public List<Component> makeButtons(boolean noHover, Topic faq, Predicate<String> permissionChecker) throws ExecutionException, InterruptedException {
+  public List<Component> makeButtons(Topic faq, Predicate<String> permissionChecker) throws ExecutionException, InterruptedException {
     var section = plugin.section("messages", "manage");
     var rows = new ArrayList<Component>();
     var buttons = new ArrayList<Component>();
@@ -134,8 +134,6 @@ public class Manager {
     Function<String, Function<Component, Component>> cmd = (name) -> (c) -> c.clickEvent(runCommand(name.formatted(faq.id())));
 
     List.of(
-        new ButtonType("content", makeEditorLink(noHover, faq, Field.CONTENT, section.getString("initial_placeholder"))),
-        new ButtonType("preface", makeEditorLink(noHover, faq, Field.PREFACE, section.getString("initial_placeholder"))),
         new ButtonType("group", suggest.apply("/faqeditor set %s group ")),
         new ButtonType("rename", suggest.apply("/faqeditor set %s topic ")),
         new ButtonType("move", cmd.apply("/faqeditor set %s positionmenu")),
@@ -190,7 +188,7 @@ public class Manager {
     }
   }
 
-  public Component makePreview(String type, @Nullable String body) {
+  public Component makePreview(String type, @NotNull Topic topic, @Nullable String body) {
     var section = plugin.section("messages", "manage", "list", "preview", type);
 
     if (body == null || body.isBlank()) {
@@ -198,7 +196,8 @@ public class Manager {
     }
 
     return m.parse(Objects.requireNonNull(section.getString("label")))
-        .hoverEvent(showText(m.parse(body)));
+        .hoverEvent(showText(m.parse(body)))
+        .clickEvent(runCommand("/faqeditor set %s editor %s".formatted(topic.id(), type)));
   }
 
 

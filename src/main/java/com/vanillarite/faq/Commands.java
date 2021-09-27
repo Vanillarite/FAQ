@@ -127,7 +127,7 @@ public class Commands {
           }
           var preface = t.smartPreface(section.getInt("max_preview_lines"));
           var keepReading = showText(
-              m.parse(Objects.requireNonNull(section.getString("keep_reading_hover")), Template.of("topic", t.topic()))
+              m.parse(requireNonNull(section.getString("keep_reading_hover")), Template.of("topic", t.topic()))
           );
           preface.lines().forEach(i -> {
             var component = prefix.component(i);
@@ -190,22 +190,56 @@ public class Commands {
   ) {
     var prefix = plugin.prefixFor(sender, "editor");
     var section = plugin.section("messages", "manage", "list");
+    var generalSection = plugin.section("messages", "list");
+    var defaultGroup = generalSection.getString("default_group");
 
     prefix.logged(section.getString("header"), Template.of("count", String.valueOf(manager.cache().invalidateAndGet().size())));
-    manager.cache().get().stream().sorted(Comparator.comparingInt(Topic::id)).forEach(topic -> prefix.response(
-        section.getString("line") + (topic.content().isBlank() ? section.getString("incomplete") : ""),
-        Template.of("id", String.valueOf(topic.id())),
-        Template.of("topic", String.valueOf(topic.topic())),
-        Template.of("author", Manager.componentAuthor(topic.author())),
-        Template.of("author_uuid", topic.author().toString()),
-        Template.of("created_ago", formatInstantToNow(topic.createdAt())),
-        Template.of("updated_ago", formatInstantToNow(topic.updatedAt())),
-        Template.of("edit_button", m.parse(Objects.requireNonNull(section.getString("edit_label")))
-            .clickEvent(runCommand("/faqeditor actions %s".formatted(topic.id())))),
-        Template.of("preview_content", manager.makePreview("content", topic.content())),
-        Template.of("preview_preface", manager.makePreview("preface", topic.preface()))
-    ));
-    prefix.response(Component.empty());
+    manager.cache().get().stream().sorted(Comparator.comparingInt(Topic::id)).forEach(topic -> {
+      Component topicComponent;
+      Component aliases = empty();
+      ArrayList<Template> placeholders = new ArrayList<>();
+      placeholders.add(Template.of("id", String.valueOf(topic.id())));
+      placeholders.add(Template.of("author", Manager.componentAuthor(topic.author())));
+      placeholders.add(Template.of("author_uuid", topic.author().toString()));
+      placeholders.add(Template.of("group", topic.group()));
+      placeholders.add(Template.of("created_ago", formatInstantToNow(topic.createdAt())));
+      placeholders.add(Template.of("updated_ago", formatInstantToNow(topic.updatedAt())));
+      if (topic.group().equals(defaultGroup)) {
+        topicComponent = m.parse(
+            requireNonNull(section.getString("topic.default_group")),
+            Template.of("topic", topic.topic())
+        );
+      } else {
+        topicComponent = m.parse(
+            requireNonNull(section.getString("topic.custom_group")),
+            Template.of("topic", topic.topic()),
+            Template.of("group", topic.group())
+        );
+      }
+      topicComponent = topicComponent.hoverEvent(showText(
+          m.parse(requireNonNull(section.getString("topic.hover")), placeholders)
+      ));
+      if (topic.alias().size() > 0) {
+        aliases = m.parse(requireNonNull(section.getString("aliases")), Template.of("aliases", String.join(", ", topic.alias())));
+      }
+      placeholders.add(Template.of("topic", topicComponent));
+      placeholders.add(Template.of("aliases", aliases));
+      placeholders.add(Template.of("edit_button", m.parse(requireNonNull(section.getString("edit_label")))
+          .clickEvent(runCommand("/faqeditor actions %s".formatted(topic.id())))
+          .hoverEvent(showText(m.parse(requireNonNull(section.getString("edit_label_hover")),
+              Template.of("topic", topicComponent))
+          ))));
+      placeholders.add(Template.of("preview_content", manager.makePreview("content", topic, topic.content())));
+      placeholders.add(Template.of("preview_preface", manager.makePreview("preface", topic, topic.preface())));
+
+      prefix.response(
+          section.getString("line") + (topic.content().isBlank() ? section.getString("incomplete") : ""), placeholders
+      );
+    });
+    prefix.response(section.getString("hint"),
+        Template.of("preview_content", m.parse(requireNonNull(section.getString("preview.content.label")))),
+        Template.of("preview_preface", m.parse(requireNonNull(section.getString("preview.preface.label"))))
+    );
   }
 
   @CommandDescription("Menu for editing FAQ")
@@ -217,19 +251,60 @@ public class Commands {
   ) {
     var prefix = plugin.prefixFor(sender, "editor");
     var section = plugin.section("messages", "manage", "edit");
-    var existing = manager.cache().findNow(id);
-
-    prefix.response(text("Generating links...", GRAY, ITALIC));
+    var existing = manager.cache().find(id);
 
     try {
       prefix.response(section.getString("header"), Template.of("topic", existing.topic()));
-      manager.makeButtons((sender instanceof ConsoleCommandSender), existing, sender::hasPermission).forEach(prefix::response);
+      manager.makeButtons(existing, sender::hasPermission).forEach(prefix::response);
       prefix.response(Component.empty());
     } catch (ExecutionException | InterruptedException e) {
       prefix.logged(text("Failed?", RED));
     }
   }
 
+  @CommandDescription("Create editor modification to the content of a FAQ")
+  @CommandMethod("faqeditor set <id> editor content")
+  @CommandPermission("vfaq.manage.edit.content")
+  private void commandFaqSetEditorContent(
+      final @NotNull CommandSender sender,
+      final @Argument("id") int id
+  ) {
+    var prefix = plugin.prefixFor(sender, "editor");
+    var section = plugin.section("messages", "manage", "edit");
+    prefix.response(text("Generating link...", GRAY, ITALIC));
+
+    var existing = manager.cache().findNow(id);
+    boolean isConsole = sender instanceof ConsoleCommandSender;
+
+    try {
+      prefix.response(manager.makeEditorLink(isConsole, existing, Field.CONTENT, section.getString("initial_placeholder"))
+          .apply(text("Please click to edit the content of %s!".formatted(existing.topic()), BLUE, UNDERLINED).hoverEvent(showText(text("Click!")))));
+    } catch (ExecutionException | InterruptedException e) {
+      prefix.logged(text("Making editor link failed?", RED));
+    }
+  }
+
+  @CommandDescription("Create editor modification to the content of a FAQ")
+  @CommandMethod("faqeditor set <id> editor preface")
+  @CommandPermission("vfaq.manage.edit.preface")
+  private void commandFaqSetEditorPreface(
+      final @NotNull CommandSender sender,
+      final @Argument("id") int id
+  ) {
+    var prefix = plugin.prefixFor(sender, "editor");
+    var section = plugin.section("messages", "manage", "edit");
+    prefix.response(text("Generating link...", GRAY, ITALIC));
+
+    var existing = manager.cache().findNow(id);
+    boolean isConsole = sender instanceof ConsoleCommandSender;
+
+    try {
+      prefix.response(manager.makeEditorLink(isConsole, existing, Field.PREFACE, section.getString("initial_placeholder"))
+          .apply(text("Please click to edit the preface of %s!".formatted(existing.topic()), BLUE, UNDERLINED).hoverEvent(showText(text("Click!")))));
+    } catch (ExecutionException | InterruptedException e) {
+      prefix.logged(text("Making editor link failed?", RED));
+    }
+  }
 
   @CommandDescription("Apply editor modification to the content of a FAQ")
   @CommandMethod("faqeditor submit <id> content <token>")
@@ -383,7 +458,7 @@ public class Commands {
         (faq) -> {
           lastPos.set(faq.pos());
           return m.parse(
-              Objects.requireNonNull(lister.section.getString("each_topic")),
+              requireNonNull(lister.section.getString("each_topic")),
               Template.of("topic", faq.topic())
           );
         }

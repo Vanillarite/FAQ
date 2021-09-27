@@ -31,7 +31,7 @@ public class SingleCache<T> {
     } catch (ExecutionException e) {
       final Throwable cause = e.getCause();
 
-      // Try to rethrow the actual exception so it's easier to understand
+      // Try to rethrow the actual exception, so it's easier to understand
       if (cause == null) throw new RuntimeException(e);
       else if (cause instanceof RuntimeException) throw (RuntimeException) cause;
       else if (cause instanceof Error) throw (Error) cause;

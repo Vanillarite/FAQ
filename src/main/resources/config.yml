@@ -3,7 +3,7 @@ debug: false
 prefix:
   faq: "<gradient:#2fb7bb:#8ee9ec><b>FAQ</gradient> <#eae9eb>»<r> "
   faq4u: "<gradient:#2fb7bb:#8ee9ec><b>FAQ4U</gradient> <#eae9eb>»<r> "
-  editor: "<gradient:#2fb7bb:#8ee9ec><b>VanillariteFAQ</gradient> <#eae9eb>»<r> "
+  editor: "<gradient:#ba652f:#edb38e><b>vFAQ</gradient> <#eae9eb>»<r> "
 
 messages:
   list:
@@ -24,10 +24,8 @@ messages:
   manage:
     initial_placeholder: '<#BDF9FC>Edit me...'
     edit:
-      header: "<gold>Click on a button below to edit <i><topic></i>. Note that some of these links are <u>one time use</u> only</gold>"
+      header: "<gold>Click on a button below to edit <i><topic></i>."
       button:
-        content: "<hover:show_text:'Click to change the full content'><aqua>[Content]</aqua></hover>"
-        preface: "<hover:show_text:'Click to change the FAQ4U preface (or leave blank to remove)'><dark_aqua>[Preface]</dark_aqua>"
         rename: "<hover:show_text:'Click to rename the topic'><yellow>[Rename]</yellow>"
         move: "<hover:show_text:'Click to reposition this topic'><gold>[Move]</gold>"
         group: "<hover:show_text:'Click to set a permission group for this topic'><dark_purple>[Group]</dark_purple>"
@@ -36,17 +34,23 @@ messages:
     list:
       header: "<gold>In total, <b><count></b> FAQ topics exist right now</gold>"
       incomplete: " <red>⚠ Content needs to be set</red>"
-      edit_label: "<hover:show_text:'Click here to edit this topic'><red>[✎ edit]</red></hover>"
+      deleted: " <gray>⚠ <i>Deleted</i></gray>"
+      edit_label_hover: "Click here to edit <i><topic></i>"
+      edit_label: "<red>[✎edit]</red>"
+      aliases: " <dark_gray>(<i><gray><aliases></gray></i>)</dark_gray>"
       preview:
         content:
-          label: "<aqua>[C?]</aqua>"
-          empty: "<gray>[C×]</gray>"
+          label: "<aqua>[C?</aqua>"
+          empty: "<hover:show_text:'<dark_gray>[<gray><i>This topic doesn\\'t have a content set! You may set it now by clicking</i></gray>]</dark_gray>'><gray>[C×</gray></hover>"
         preface:
-          label: "<dark_aqua>[P?]</dark_aqua>"
-          empty: "<dark_gray>[P×]</dark_gray>"
-      line: "<edit_button> <preview_content> <preview_preface> #<b><id></b> <gray>:</gray>
-        <i><topic></i> <gray>by</gray>
-        <hover:show_text:'Created <created_ago> ago\nModified <updated_ago> ago\n<author_uuid>'><gold><author></gold></hover>."
+          label: "<dark_aqua>P?]</dark_aqua>"
+          empty: "<hover:show_text:'<dark_gray>[<gray><i>This topic doesn\\'t have a preface set! You may set it now by clicking</i></gray>]</dark_gray>'><dark_gray>P×]</dark_gray></hover>"
+      topic:
+        default_group: "<i><topic></i>"
+        custom_group: "<dark_purple><group></dark_purple>/<i><topic></i>"
+        hover: "#<b><id></b>\nCreated <created_ago> ago\nModified <updated_ago> ago\nby <gold><author></gold>\n<author_uuid>"
+      line: "<edit_button><preview_content><preview_preface> <topic><aliases>."
+      hint: "<b>Hint:</b> <gray>Click on <preview_content> or <preview_preface> to edit the content or preview, respectively.</gray>"
     alias:
       list: "<count> aliases: "
       add: "<hover:show_text:'Click to add new alias'><green>[+]</green></hover>"

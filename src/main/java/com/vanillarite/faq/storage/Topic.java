@@ -22,6 +22,7 @@ public record Topic(
     String group,
     Pos pos,
     UUID author,
+    boolean active,
     Instant createdAt,
     Instant updatedAt
 ) {
@@ -38,6 +39,7 @@ public record Topic(
             json.get("pos").getAsJsonObject().get("col").getAsInt()
         ),
         UUID.fromString(json.get("author").getAsString()),
+        json.get("active").getAsBoolean(),
         OffsetDateTime.parse(json.get("created_at").getAsString()).toInstant(),
         OffsetDateTime.parse(json.get("updated_at").getAsString()).toInstant()
     );

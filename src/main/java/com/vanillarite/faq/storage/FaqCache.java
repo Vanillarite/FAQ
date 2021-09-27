@@ -31,6 +31,10 @@ public class FaqCache extends SingleCache<ArrayList<Topic>> {
     this.plugin = plugin;
   }
 
+  public Topic find(int id) {
+    return get().stream().filter(i -> i.id() == id).findFirst().orElseThrow();
+  }
+
   public Topic findNow(int id) {
     return invalidateAndGet().stream().filter(i -> i.id() == id).findFirst().orElseThrow();
   }

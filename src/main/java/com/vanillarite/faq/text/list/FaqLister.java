@@ -2,17 +2,14 @@ package com.vanillarite.faq.text.list;
 
 import com.google.common.collect.Multimap;
 import com.google.common.collect.MultimapBuilder;
-import com.google.common.collect.Multiset;
-import com.google.common.collect.Ordering;
 import com.vanillarite.faq.FaqPlugin;
 import com.vanillarite.faq.storage.FaqCache;
 import com.vanillarite.faq.storage.Topic;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.minimessage.Template;
-import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.ConfigurationSection;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -20,10 +17,10 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.stream.Stream;
 
 import static net.kyori.adventure.text.Component.empty;
 import static net.kyori.adventure.text.event.HoverEvent.showText;
@@ -35,6 +32,8 @@ public final class FaqLister {
   private final FaqCache cache;
   private final Predicate<String> permissionCheck;
   private final Consumer<Component> lineConsumer;
+  @Nullable
+  private final BiFunction<Topic, Component, Component> topicCallback;
   public final ConfigurationSection section;
   private final ConfigurationSection generalSection;
   private final ArrayList<Component> topics = new ArrayList<>();
@@ -43,11 +42,16 @@ public final class FaqLister {
   private final int maxPerLine;
 
   public FaqLister(String style, String command, FaqPlugin plugin, FaqCache cache, Predicate<String> permissionCheck, Consumer<Component> lineConsumer) {
+    this(style, command, plugin, cache, permissionCheck, lineConsumer, null);
+  }
+
+  public FaqLister(String style, String command, FaqPlugin plugin, FaqCache cache, Predicate<String> permissionCheck, Consumer<Component> lineConsumer, @Nullable BiFunction<Topic, Component, Component> topicCallback) {
     this.command = command;
     this.plugin = plugin;
     this.cache = cache;
     this.permissionCheck = permissionCheck;
     this.lineConsumer = lineConsumer;
+    this.topicCallback = topicCallback;
     this.section = plugin.section("messages", "list", style);
     this.generalSection = plugin.section("messages", "list");
     this.defaultGroup = generalSection.getString("default_group");
@@ -76,7 +80,7 @@ public final class FaqLister {
   }
 
   private Component addTopic(Topic faq) {
-    return m.parse(Objects.requireNonNull(section.getString("each_topic")),
+    var c = m.parse(Objects.requireNonNull(section.getString("each_topic")),
         Template.of("topic", faq.topic())
     ).clickEvent(
         ClickEvent.runCommand("/" + command + " " + faq.topic())
@@ -85,6 +89,8 @@ public final class FaqLister {
             m.parse(Objects.requireNonNull(section.getString("hover")), Template.of("topic", faq.topic()))
         )
     );
+    if (topicCallback != null) c = topicCallback.apply(faq, c);
+    return c;
   }
 
   public void emitTopicGroup(Collection<Topic> group, Function<Topic, Component> topicFun) {

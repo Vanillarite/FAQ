@@ -22,15 +22,18 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
 import static com.vanillarite.faq.FaqPlugin.m;
 import static com.vanillarite.faq.util.DurationUtil.formatInstantToNow;
+import static java.util.Objects.requireNonNull;
 import static net.kyori.adventure.text.Component.empty;
 import static net.kyori.adventure.text.Component.text;
 import static net.kyori.adventure.text.event.ClickEvent.runCommand;
@@ -55,12 +58,17 @@ public class Commands {
       final @NotNull CommandSender sender
   ) {
     var prefix = plugin.prefixFor(sender, "faq");
+    BiFunction<Topic, Component, Component> topicCallback = null;
+    if (sender.hasPermission("vfaq.manage.list")) {
+      topicCallback = (t, c) -> c.insertion("/faqeditor actions %s".formatted(t.id()));
+    }
     new FaqLister(
         "faq",
         "faq",
         plugin, manager.cache(),
         (g) -> sender.hasPermission("vfaq.group." + g),
-        prefix::response
+        prefix::response,
+        topicCallback
     ).run();
   }
 

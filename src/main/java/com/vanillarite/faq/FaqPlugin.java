@@ -19,7 +19,6 @@ import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
-import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -31,13 +30,19 @@ import org.spongepowered.configurate.yaml.YamlConfigurationLoader;
 import java.io.File;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Objects;
 import java.util.function.Function;
 
 public final class FaqPlugin extends JavaPlugin {
   public static final MiniMessage m = MiniMessage.miniMessage();
   private boolean isBungee = false;
   private Config config;
+  private final ObjectMapper.Factory objectFactory = ObjectMapper
+      .factoryBuilder()
+      .defaultNamingScheme(NamingSchemes.SNAKE_CASE)
+      .build();
+  private final YamlConfigurationLoader.Builder configBuilder = YamlConfigurationLoader.builder()
+      .defaultOptions(opts -> opts.serializers(builder -> builder.registerAnnotatedObjects(objectFactory)));
+  private final File configFile = new File(this.getDataFolder(), "config.yml");
 
   public Config config() {
     return config;
@@ -52,17 +57,8 @@ public final class FaqPlugin extends JavaPlugin {
       getServer().getMessenger().registerOutgoingPluginChannel(this, "BungeeCord");
     }
 
-    final var objectFactory = ObjectMapper
-        .factoryBuilder()
-        .defaultNamingScheme(NamingSchemes.SNAKE_CASE)
-        .build();
-    final var configBuilder = YamlConfigurationLoader.builder()
-        .defaultOptions(opts -> opts.serializers(builder -> builder.registerAnnotatedObjects(objectFactory)));
-    final var configFile = new File(this.getDataFolder(), "config.yml");
-    final var configLoader = configBuilder.file(configFile).build();
-    final var defaultLoader = configBuilder.url(this.getClass().getResource("/config.yml")).build();
     try {
-      config = objectFactory.get(Config.class).load(configLoader.load().mergeFrom(defaultLoader.load()));
+      loadConfig();
     } catch (ConfigurateException e) {
       e.printStackTrace();
     }
@@ -150,5 +146,11 @@ public final class FaqPlugin extends JavaPlugin {
 
   public Prefixer prefixFor(CommandSender sender, PrefixKind kind) {
     return new Prefixer(sender, config.prefix().get(kind));
+  }
+
+  public void loadConfig() throws ConfigurateException {
+    final var configLoader = configBuilder.file(configFile).build();
+    final var defaultLoader = configBuilder.url(this.getClass().getResource("/config.yml")).build();
+    config = objectFactory.get(Config.class).load(configLoader.load().mergeFrom(defaultLoader.load()));
   }
 }

@@ -21,6 +21,8 @@ import net.kyori.adventure.text.minimessage.Template;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
 import org.jetbrains.annotations.NotNull;
+import org.spongepowered.configurate.ConfigurateException;
+import org.spongepowered.configurate.serialize.SerializationException;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -521,10 +523,13 @@ public class Commands {
   @CommandMethod("faqeditor reload config")
   @CommandPermission("vfaq.cmd.reload")
   private void commandReload(final @NotNull CommandSender sender) {
-    plugin.reloadConfig();
-
-    var prefix = plugin.prefixFor(sender, PrefixKind.EDITOR);
-    prefix.response("Config was reloaded!");
+    try {
+      plugin.loadConfig();
+      var prefix = plugin.prefixFor(sender, PrefixKind.EDITOR);
+      prefix.response("Config was reloaded!");
+    } catch (ConfigurateException e) {
+      e.printStackTrace();
+    }
   }
 
   @CommandMethod("faqeditor admin history <id>")

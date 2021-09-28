@@ -22,7 +22,6 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
 import org.jetbrains.annotations.NotNull;
 import org.spongepowered.configurate.ConfigurateException;
-import org.spongepowered.configurate.serialize.SerializationException;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -141,14 +140,14 @@ public class Commands {
             var component = prefix.component(i);
             if (preface.isContinuable()) {
               component = component
-                  .clickEvent(runCommand("/faq " + topic))
+                  .clickEvent(runCommand("/faq " + t.topic()))
                   .hoverEvent(keepReading);
             }
             plugin.networkBroadcast(component, sender);
           });
           if (preface.isPreview()) {
             plugin.networkBroadcast(prefix.component(section.keepReading()).clickEvent(
-                runCommand("/faq " + topic)
+                runCommand("/faq " + t.topic())
             ).hoverEvent(keepReading), sender);
           }
         },

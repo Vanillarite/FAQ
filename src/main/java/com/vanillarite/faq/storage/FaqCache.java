@@ -22,6 +22,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class FaqCache extends SingleCache<ArrayList<Topic>> {
@@ -40,10 +41,23 @@ public class FaqCache extends SingleCache<ArrayList<Topic>> {
   }
 
   public Optional<Topic> findTopicOrAlias(String topic) {
-    return get().stream()
+    var direct = get().stream()
         .filter(i -> !i.content().isBlank())
         .filter(i -> i.topic().equalsIgnoreCase(topic) || i.alias().stream().anyMatch(a -> a.equalsIgnoreCase(topic)))
         .findFirst();
+    if (direct.isPresent()) return direct;
+    else {
+      var close = get().stream()
+          .filter(i -> !i.content().isBlank())
+          .filter(i -> i.topic().toLowerCase().startsWith(topic.toLowerCase()) ||
+              i.alias().stream().anyMatch(a -> a.toLowerCase().startsWith(topic.toLowerCase())))
+          .toList();
+      if (close.size() == 1) {
+        return Optional.of(close.get(0));
+      } else {
+        return Optional.empty();
+      }
+    }
   }
 
   public Stream<Topic> getIgnoreEmpty() {

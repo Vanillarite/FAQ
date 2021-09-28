@@ -9,7 +9,7 @@ import cloud.commandframework.annotations.suggestions.Suggestions;
 import cloud.commandframework.context.CommandContext;
 import com.github.difflib.algorithm.DiffException;
 import com.github.difflib.text.DiffRowGenerator;
-import com.google.gson.JsonObject;
+import com.vanillarite.faq.config.PrefixKind;
 import com.vanillarite.faq.storage.Manager;
 import com.vanillarite.faq.storage.Topic;
 import com.vanillarite.faq.storage.supabase.Field;
@@ -25,7 +25,6 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
@@ -33,7 +32,6 @@ import java.util.function.Consumer;
 
 import static com.vanillarite.faq.FaqPlugin.m;
 import static com.vanillarite.faq.util.DurationUtil.formatInstantToNow;
-import static java.util.Objects.requireNonNull;
 import static net.kyori.adventure.text.Component.empty;
 import static net.kyori.adventure.text.Component.text;
 import static net.kyori.adventure.text.event.ClickEvent.runCommand;
@@ -57,13 +55,13 @@ public class Commands {
   private void commandFaqNoArgs(
       final @NotNull CommandSender sender
   ) {
-    var prefix = plugin.prefixFor(sender, "faq");
+    var prefix = plugin.prefixFor(sender, PrefixKind.FAQ);
     BiFunction<Topic, Component, Component> topicCallback = null;
     if (sender.hasPermission("vfaq.manage.list")) {
       topicCallback = (t, c) -> c.insertion("/faqeditor actions %s".formatted(t.id()));
     }
     new FaqLister(
-        "faq",
+        PrefixKind.FAQ,
         "faq",
         plugin, manager.cache(),
         (g) -> sender.hasPermission("vfaq.group." + g),
@@ -79,22 +77,22 @@ public class Commands {
       final @NotNull CommandSender sender,
       final @NotNull @Argument(value = "topic", suggestions = "faqTopicsAll") @Greedy String topic
   ) {
-    var section = plugin.section("messages");
-    var prefix = plugin.prefixFor(sender, "faq");
-    var defaultGroup = section.getString("list.default_group");
+    var section = plugin.config().messages();
+    var prefix = plugin.prefixFor(sender, PrefixKind.FAQ);
+    var defaultGroup = section.list().defaultGroup();
 
     manager.cache().findTopicOrAlias(topic).ifPresentOrElse(
         (t) -> {
           if (t.group().equals(defaultGroup) || sender.hasPermission("vfaq.group." + t.group())) {
             prefix.response(
-                section.getString("header") + "<r>\n\n" + t.content() + "\n",
+                section.header() + "<r>\n\n" + t.content() + "\n",
                 Template.of("topic", t.topic())
             );
           } else {
-            prefix.logged(section.getString("unknown_topic"));
+            prefix.logged(section.unknownTopic());
           }
         },
-        () -> prefix.logged(section.getString("unknown_topic"))
+        () -> prefix.logged(section.unknownTopic())
     );
   }
 
@@ -104,9 +102,9 @@ public class Commands {
   private void commandFaqForYouNoArgs(
       final @NotNull CommandSender sender
   ) {
-    var prefix = plugin.prefixFor(sender, "faq4u");
+    var prefix = plugin.prefixFor(sender, PrefixKind.FAQ4U);
     new FaqLister(
-        "faq4u",
+        PrefixKind.FAQ4U,
         "faq4u",
         plugin, manager.cache(),
         (g) -> false,
@@ -122,10 +120,10 @@ public class Commands {
       final @NotNull CommandSender sender,
       final @NotNull @Argument(value = "topic", suggestions = "faqTopicsDefault") @Greedy String topic
   ) {
-    var section = plugin.section("messages");
-    var prefix = plugin.prefixFor(sender, "faq");
-    var prefix4u = plugin.prefixFor(sender, "faq4u");
-    var defaultGroup = section.getString("list.default_group");
+    var section = plugin.config().messages();
+    var prefix = plugin.prefixFor(sender, PrefixKind.FAQ);
+    var prefix4u = plugin.prefixFor(sender, PrefixKind.FAQ4U);
+    var defaultGroup = section.list().defaultGroup();
 
     manager.cache().findTopicOrAlias(topic).ifPresentOrElse(
         (t) -> {
@@ -133,9 +131,9 @@ public class Commands {
             prefix4u.response(text("This topic can't be used because it's locked behind a permission", RED));
             return;
           }
-          var preface = t.smartPreface(section.getInt("max_preview_lines"));
+          var preface = t.smartPreface(section.maxPreviewLines());
           var keepReading = showText(
-              m.parse(requireNonNull(section.getString("keep_reading_hover")), Template.of("topic", t.topic()))
+              m.parse(section.keepReadingHover(), Template.of("topic", t.topic()))
           );
           preface.lines().forEach(i -> {
             var component = prefix.component(i);
@@ -147,12 +145,12 @@ public class Commands {
             plugin.networkBroadcast(component, sender);
           });
           if (preface.isPreview()) {
-            plugin.networkBroadcast(prefix.component(section.getString("keep_reading")).clickEvent(
+            plugin.networkBroadcast(prefix.component(section.keepReading()).clickEvent(
                 runCommand("/faq " + topic)
             ).hoverEvent(keepReading), sender);
           }
         },
-        () -> prefix4u.logged(section.getString("unknown_topic"))
+        () -> prefix4u.logged(section.unknownTopic())
     );
   }
 
@@ -163,8 +161,8 @@ public class Commands {
       final @NotNull CommandSender sender,
       final @NotNull @Argument("topic") @Greedy String topicName
   ) {
-    var prefix = plugin.prefixFor(sender, "editor");
-    var section = plugin.section("messages", "manage");
+    var prefix = plugin.prefixFor(sender, PrefixKind.EDITOR);
+    var section = plugin.config().messages().manage();
 
     if (manager.assertNoExisting(topicName)) {
       prefix.logged(text("This name cannot be used because it would have the same name as an already existing topic or alias", RED));
@@ -180,7 +178,7 @@ public class Commands {
           prefix.logged(text("Success! Created new FAQ (assigned #%s)".formatted(newTopic.id())));
           prefix.logged(text("This FAQ still has an empty body, creating link to set the content...", GRAY, ITALIC));
           try {
-            prefix.response(manager.makeEditorLink(isConsole, newTopic, Field.CONTENT, section.getString("initial_placeholder"))
+            prefix.response(manager.makeEditorLink(isConsole, newTopic, Field.CONTENT, section.initialPlaceholder())
                 .apply(text("Please click to set the content now!", BLUE, UNDERLINED).hoverEvent(showText(text("Click!")))));
           } catch (ExecutionException | InterruptedException e) {
             prefix.logged(text("Making editor link failed?", RED));
@@ -196,12 +194,11 @@ public class Commands {
   private void commandFaqList(
       final @NotNull CommandSender sender
   ) {
-    var prefix = plugin.prefixFor(sender, "editor");
-    var section = plugin.section("messages", "manage", "list");
-    var generalSection = plugin.section("messages", "list");
-    var defaultGroup = generalSection.getString("default_group");
+    var prefix = plugin.prefixFor(sender, PrefixKind.EDITOR);
+    var section = plugin.config().messages().manage().list();
+    var defaultGroup = plugin.config().messages().list().defaultGroup();
 
-    prefix.logged(section.getString("header"), Template.of("count", String.valueOf(manager.cache().invalidateAndGet().size())));
+    prefix.logged(section.header(), Template.of("count", String.valueOf(manager.cache().invalidateAndGet().size())));
     manager.cache().get().stream().sorted(Comparator.comparingInt(Topic::id)).forEach(topic -> {
       Component topicComponent;
       Component aliases = empty();
@@ -214,39 +211,39 @@ public class Commands {
       placeholders.add(Template.of("updated_ago", formatInstantToNow(topic.updatedAt())));
       if (topic.group().equals(defaultGroup)) {
         topicComponent = m.parse(
-            requireNonNull(section.getString("topic.default_group")),
+            section.topic().defaultGroup(),
             Template.of("topic", topic.topic())
         );
       } else {
         topicComponent = m.parse(
-            requireNonNull(section.getString("topic.custom_group")),
+            section.topic().customGroup(),
             Template.of("topic", topic.topic()),
             Template.of("group", topic.group())
         );
       }
       topicComponent = topicComponent.hoverEvent(showText(
-          m.parse(requireNonNull(section.getString("topic.hover")), placeholders)
+          m.parse(section.topic().hover(), placeholders)
       ));
       if (topic.alias().size() > 0) {
-        aliases = m.parse(requireNonNull(section.getString("aliases")), Template.of("aliases", String.join(", ", topic.alias())));
+        aliases = m.parse(section.aliases(), Template.of("aliases", String.join(", ", topic.alias())));
       }
       placeholders.add(Template.of("topic", topicComponent));
       placeholders.add(Template.of("aliases", aliases));
-      placeholders.add(Template.of("edit_button", m.parse(requireNonNull(section.getString("edit_label")))
+      placeholders.add(Template.of("edit_button", m.parse(section.editLabel())
           .clickEvent(runCommand("/faqeditor actions %s".formatted(topic.id())))
-          .hoverEvent(showText(m.parse(requireNonNull(section.getString("edit_label_hover")),
+          .hoverEvent(showText(m.parse(section.editLabelHover(),
               Template.of("topic", topicComponent))
           ))));
-      placeholders.add(Template.of("preview_content", manager.makePreview("content", topic, topic.content())));
-      placeholders.add(Template.of("preview_preface", manager.makePreview("preface", topic, topic.preface())));
+      placeholders.add(Template.of("preview_content", manager.makePreview(Field.CONTENT, topic)));
+      placeholders.add(Template.of("preview_preface", manager.makePreview(Field.PREFACE, topic)));
 
       prefix.response(
-          section.getString("line") + (topic.content().isBlank() ? section.getString("incomplete") : ""), placeholders
+          section.line() + (topic.content().isBlank() ? section.incomplete() : ""), placeholders
       );
     });
-    prefix.response(section.getString("hint"),
-        Template.of("preview_content", m.parse(requireNonNull(section.getString("preview.content.label")))),
-        Template.of("preview_preface", m.parse(requireNonNull(section.getString("preview.preface.label"))))
+    prefix.response(section.hint(),
+        Template.of("preview_content", m.parse(section.preview().content().label())),
+        Template.of("preview_preface", m.parse(section.preview().preface().label()))
     );
   }
 
@@ -257,12 +254,12 @@ public class Commands {
       final @NotNull CommandSender sender,
       final @Argument("id") int id
   ) {
-    var prefix = plugin.prefixFor(sender, "editor");
-    var section = plugin.section("messages", "manage", "edit");
+    var prefix = plugin.prefixFor(sender, PrefixKind.EDITOR);
+    var section = plugin.config().messages().manage().edit();
     var existing = manager.cache().find(id);
 
     try {
-      prefix.response(section.getString("header"), Template.of("topic", existing.topic()));
+      prefix.response(section.header(), Template.of("topic", existing.topic()));
       manager.makeButtons(existing, sender::hasPermission).forEach(prefix::response);
       prefix.response(Component.empty());
     } catch (ExecutionException | InterruptedException e) {
@@ -277,15 +274,15 @@ public class Commands {
       final @NotNull CommandSender sender,
       final @Argument("id") int id
   ) {
-    var prefix = plugin.prefixFor(sender, "editor");
-    var section = plugin.section("messages", "manage", "edit");
+    var prefix = plugin.prefixFor(sender, PrefixKind.EDITOR);
+    var section = plugin.config().messages().manage();
     prefix.response(text("Generating link...", GRAY, ITALIC));
 
     var existing = manager.cache().findNow(id);
     boolean isConsole = sender instanceof ConsoleCommandSender;
 
     try {
-      prefix.response(manager.makeEditorLink(isConsole, existing, Field.CONTENT, section.getString("initial_placeholder"))
+      prefix.response(manager.makeEditorLink(isConsole, existing, Field.CONTENT, section.initialPlaceholder())
           .apply(text("Please click to edit the content of %s!".formatted(existing.topic()), BLUE, UNDERLINED).hoverEvent(showText(text("Click!")))));
     } catch (ExecutionException | InterruptedException e) {
       prefix.logged(text("Making editor link failed?", RED));
@@ -299,15 +296,14 @@ public class Commands {
       final @NotNull CommandSender sender,
       final @Argument("id") int id
   ) {
-    var prefix = plugin.prefixFor(sender, "editor");
-    var section = plugin.section("messages", "manage", "edit");
+    var prefix = plugin.prefixFor(sender, PrefixKind.EDITOR);
     prefix.response(text("Generating link...", GRAY, ITALIC));
 
     var existing = manager.cache().findNow(id);
     boolean isConsole = sender instanceof ConsoleCommandSender;
 
     try {
-      prefix.response(manager.makeEditorLink(isConsole, existing, Field.PREFACE, section.getString("initial_placeholder"))
+      prefix.response(manager.makeEditorLink(isConsole, existing, Field.PREFACE, plugin.config().messages().manage().initialPlaceholder())
           .apply(text("Please click to edit the preface of %s!".formatted(existing.topic()), BLUE, UNDERLINED).hoverEvent(showText(text("Click!")))));
     } catch (ExecutionException | InterruptedException e) {
       prefix.logged(text("Making editor link failed?", RED));
@@ -345,7 +341,7 @@ public class Commands {
       final @Argument("id") int id,
       final @NotNull @Argument("new_topic") @Greedy String newTopic
   ) {
-    var prefix = plugin.prefixFor(sender, "editor");
+    var prefix = plugin.prefixFor(sender, PrefixKind.EDITOR);
 
     if (manager.assertNoExisting(newTopic)) {
       prefix.logged(text("This name cannot be used because it would have the same name as an already existing topic or alias", RED));
@@ -369,12 +365,11 @@ public class Commands {
       final @Argument("id") int id,
       final @Argument("new_group") @Greedy String groupName
   ) {
-    var prefix = plugin.prefixFor(sender, "editor");
-    var section = plugin.section("messages", "list");
+    var prefix = plugin.prefixFor(sender, PrefixKind.EDITOR);
 
     var cleanGroupName = groupName;
     if (groupName == null || groupName.isBlank()) {
-      cleanGroupName = section.getString("default_group");
+      cleanGroupName = plugin.config().messages().list().defaultGroup();
     }
 
     prefix.response(text("Processing change...", GRAY, ITALIC));
@@ -403,7 +398,7 @@ public class Commands {
       final @Argument("id") int id,
       final @NotNull @Argument("new_alias") @Greedy String newAlias
   ) {
-    var prefix = plugin.prefixFor(sender, "editor");
+    var prefix = plugin.prefixFor(sender, PrefixKind.EDITOR);
 
     if (manager.assertNoExisting(newAlias)) {
       prefix.logged(text("This alias cannot be used because it would have the same name as an already existing topic or alias", RED));
@@ -427,7 +422,7 @@ public class Commands {
       final @Argument("id") int id,
       final @NotNull @Argument("alias_name") @Greedy String aliasName
   ) {
-    var prefix = plugin.prefixFor(sender, "editor");
+    var prefix = plugin.prefixFor(sender, PrefixKind.EDITOR);
 
     prefix.response(text("Processing change...", GRAY, ITALIC));
 
@@ -445,12 +440,12 @@ public class Commands {
       final @NotNull CommandSender sender,
       final @Argument("id") int id
   ) {
-    var prefix = plugin.prefixFor(sender, "editor");
+    var prefix = plugin.prefixFor(sender, PrefixKind.EDITOR);
 
     var lastPos = new AtomicReference<>(new Topic.Pos(0, 0));
     var existing = manager.cache().findNow(id);
     var lister = new FaqLister(
-        "faq",
+        PrefixKind.FAQ,
         "faq",
         plugin, manager.cache(),
         (g) -> sender.hasPermission("vfaq.group." + g),
@@ -466,7 +461,7 @@ public class Commands {
         (faq) -> {
           lastPos.set(faq.pos());
           return m.parse(
-              requireNonNull(lister.section.getString("each_topic")),
+              lister.section.eachTopic(),
               Template.of("topic", faq.topic())
           );
         }
@@ -491,7 +486,7 @@ public class Commands {
       final @Argument("line") int line,
       final @Argument("col") int col
   ) {
-    var prefix = plugin.prefixFor(sender, "editor");
+    var prefix = plugin.prefixFor(sender, PrefixKind.EDITOR);
 
     prefix.response(text("Processing change...", GRAY, ITALIC));
     var newPos = new Topic.Pos(line, col);
@@ -510,7 +505,7 @@ public class Commands {
       final @NotNull CommandSender sender,
       final @Argument("id") int id
   ) {
-    var prefix = plugin.prefixFor(sender, "editor");
+    var prefix = plugin.prefixFor(sender, PrefixKind.EDITOR);
 
     prefix.response(text("Processing deletion...", GRAY, ITALIC));
 
@@ -528,7 +523,7 @@ public class Commands {
   private void commandReload(final @NotNull CommandSender sender) {
     plugin.reloadConfig();
 
-    var prefix = plugin.prefixFor(sender, "editor");
+    var prefix = plugin.prefixFor(sender, PrefixKind.EDITOR);
     prefix.response("Config was reloaded!");
   }
 
@@ -577,8 +572,7 @@ public class Commands {
 
   @Suggestions("faqTopicsAll")
   public @NotNull List<String> completeFaqTopicsAll(CommandContext<CommandSender> sender, String input) {
-    var section = plugin.section("messages", "list");
-    var defaultGroup = section.getString("default_group");
+    var defaultGroup = plugin.config().messages().list().defaultGroup();
     return manager.cache().get().stream()
         .filter(t -> t.group().equals(defaultGroup) || sender.getSender().hasPermission("vfaq.group." + t.group()))
         .mapMulti((Topic i, Consumer<String> r) -> {
@@ -591,8 +585,7 @@ public class Commands {
 
   @Suggestions("faqTopicsDefault")
   public @NotNull List<String> completeFaqTopicsDefault(CommandContext<CommandSender> sender, String input) {
-    var section = plugin.section("messages", "list");
-    var defaultGroup = section.getString("default_group");
+    var defaultGroup = plugin.config().messages().list().defaultGroup();
     return manager.cache().get().stream()
         .filter(t -> t.group().equals(defaultGroup))
         .mapMulti((Topic i, Consumer<String> r) -> {

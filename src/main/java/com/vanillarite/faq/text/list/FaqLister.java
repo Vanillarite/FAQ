@@ -3,12 +3,13 @@ package com.vanillarite.faq.text.list;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.MultimapBuilder;
 import com.vanillarite.faq.FaqPlugin;
+import com.vanillarite.faq.config.PrefixKind;
+import com.vanillarite.faq.config.message.ListMessages;
 import com.vanillarite.faq.storage.FaqCache;
 import com.vanillarite.faq.storage.Topic;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.minimessage.Template;
-import org.bukkit.configuration.ConfigurationSection;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -22,49 +23,43 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import static com.vanillarite.faq.FaqPlugin.m;
 import static net.kyori.adventure.text.Component.empty;
 import static net.kyori.adventure.text.event.HoverEvent.showText;
-import static com.vanillarite.faq.FaqPlugin.m;
 
 public final class FaqLister {
   private final String command;
-  private final FaqPlugin plugin;
   private final FaqCache cache;
   private final Predicate<String> permissionCheck;
   private final Consumer<Component> lineConsumer;
   @Nullable
   private final BiFunction<Topic, Component, Component> topicCallback;
-  public final ConfigurationSection section;
-  private final ConfigurationSection generalSection;
+  public final ListMessages.ListSection section;
+  private final ListMessages generalSection;
   private final ArrayList<Component> topics = new ArrayList<>();
   private final HashMap<String, Boolean> knownGroups = new HashMap<>();
   private final String defaultGroup;
   private final int maxPerLine;
 
-  public FaqLister(String style, String command, FaqPlugin plugin, FaqCache cache, Predicate<String> permissionCheck, Consumer<Component> lineConsumer) {
+  public FaqLister(PrefixKind style, String command, FaqPlugin plugin, FaqCache cache, Predicate<String> permissionCheck, Consumer<Component> lineConsumer) {
     this(style, command, plugin, cache, permissionCheck, lineConsumer, null);
   }
 
-  public FaqLister(String style, String command, FaqPlugin plugin, FaqCache cache, Predicate<String> permissionCheck, Consumer<Component> lineConsumer, @Nullable BiFunction<Topic, Component, Component> topicCallback) {
+  public FaqLister(PrefixKind style, String command, FaqPlugin plugin, FaqCache cache, Predicate<String> permissionCheck, Consumer<Component> lineConsumer, @Nullable BiFunction<Topic, Component, Component> topicCallback) {
     this.command = command;
-    this.plugin = plugin;
     this.cache = cache;
     this.permissionCheck = permissionCheck;
     this.lineConsumer = lineConsumer;
     this.topicCallback = topicCallback;
-    this.section = plugin.section("messages", "list", style);
-    this.generalSection = plugin.section("messages", "list");
-    this.defaultGroup = generalSection.getString("default_group");
-    this.maxPerLine = section.getInt("max_per_line");
-  }
-
-  private Component sectionMM(String path) {
-    return m.parse(Objects.requireNonNull(section.getString(path)));
+    this.section = plugin.config().messages().list().get(style);
+    this.generalSection = plugin.config().messages().list();
+    this.defaultGroup = generalSection.defaultGroup();
+    this.maxPerLine = section.maxPerLine();
   }
 
   private void emitLine() {
     if (topics.size() > 0) {
-      var line = empty().append(sectionMM("prefix"));
+      var line = empty().append(m.parse(section.prefix()));
       for (var t : topics) line = line.append(t);
       lineConsumer.accept(line);
       topics.clear();
@@ -80,13 +75,13 @@ public final class FaqLister {
   }
 
   private Component addTopic(Topic faq) {
-    var c = m.parse(Objects.requireNonNull(section.getString("each_topic")),
+    var c = m.parse(section.eachTopic(),
         Template.of("topic", faq.topic())
     ).clickEvent(
         ClickEvent.runCommand("/" + command + " " + faq.topic())
     ).hoverEvent(
         showText(
-            m.parse(Objects.requireNonNull(section.getString("hover")), Template.of("topic", faq.topic()))
+            m.parse(section.hover(), Template.of("topic", faq.topic()))
         )
     );
     if (topicCallback != null) c = topicCallback.apply(faq, c);
@@ -117,7 +112,7 @@ public final class FaqLister {
   }
 
   public void run() {
-    lineConsumer.accept(sectionMM("header"));
+    lineConsumer.accept(m.parse(section.header()));
 
     topicsByGroup()
         .asMap()
@@ -130,7 +125,7 @@ public final class FaqLister {
         )
         .forEachOrdered((topicGroup) -> {
           if (!topicGroup.getKey().equals(defaultGroup)) {
-            lineConsumer.accept(m.parse(Objects.requireNonNull(generalSection.getString("group_separator")), Template.of("group", topicGroup.getKey())));
+            lineConsumer.accept(m.parse(Objects.requireNonNull(generalSection.groupSeparator()), Template.of("group", topicGroup.getKey())));
           }
           emitTopicGroup(topicGroup.getValue(), this::addTopic);
         });

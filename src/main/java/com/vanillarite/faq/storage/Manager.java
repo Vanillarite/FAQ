@@ -3,10 +3,11 @@ package com.vanillarite.faq.storage;
 import com.google.gson.JsonElement;
 import com.vanillarite.faq.AdventureEditorAPI;
 import com.vanillarite.faq.FaqPlugin;
+import com.vanillarite.faq.config.PrefixKind;
+import com.vanillarite.faq.config.message.ButtonKind;
 import com.vanillarite.faq.storage.supabase.Field;
 import com.vanillarite.faq.storage.supabase.Method;
 import com.vanillarite.faq.storage.supabase.SupabaseConnection;
-import com.vanillarite.faq.text.list.FaqLister;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.Template;
 import org.bukkit.Bukkit;
@@ -15,11 +16,9 @@ import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
@@ -28,7 +27,8 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static com.vanillarite.faq.FaqPlugin.m;
-import static net.kyori.adventure.text.Component.*;
+import static net.kyori.adventure.text.Component.space;
+import static net.kyori.adventure.text.Component.text;
 import static net.kyori.adventure.text.TextComponent.ofChildren;
 import static net.kyori.adventure.text.event.ClickEvent.*;
 import static net.kyori.adventure.text.event.HoverEvent.showText;
@@ -50,12 +50,10 @@ public class Manager {
   }
 
   public SupabaseConnection supabase() {
-    var section = plugin.section("supabase");
-
     return new SupabaseConnection(
-        URI.create(Objects.requireNonNull(section.getString("url"))),
-        section.getString("anon_key"),
-        section.getString("auth_key")
+        plugin.config().supabase().url(),
+        plugin.config().supabase().anonKey(),
+        plugin.config().supabase().authKey()
     );
   }
 
@@ -98,10 +96,9 @@ public class Manager {
   }
 
   public Function<Component, Component> makeEditorLink(boolean noHover, Topic existing, Field field, String placeholder) throws ExecutionException, InterruptedException {
-    var editor = plugin.section("mm_editor");
-    var editorLink = Objects.requireNonNull(editor.getString("url"));
+    var editorLink = plugin.config().mmEditor().url();
 
-    var token = new AdventureEditorAPI(URI.create(editorLink)).startSession(
+    var token = new AdventureEditorAPI(editorLink).startSession(
         requireNonBlankElse(existing.findField(field), placeholder),
         "/faqeditor submit %s %s {token}".formatted(String.valueOf(existing.id()), field.name().toLowerCase()),
         "VanillariteFAQ"
@@ -122,24 +119,24 @@ public class Manager {
     return s1;
   }
 
-  private Component makeButton(String kind, Function<Component, Component> transform) {
-    var section = plugin.section("messages", "manage", "edit", "button");
-    return transform.apply(m.parse(Objects.requireNonNull(section.getString(kind))));
+  private Component makeButton(ButtonKind kind, Function<Component, Component> transform) {
+    var section = plugin.config().messages().manage().edit().button();
+    return transform.apply(m.parse(section.get(kind)));
   }
 
   public List<Component> makeButtons(Topic faq, Predicate<String> permissionChecker) throws ExecutionException, InterruptedException {
-    var section = plugin.section("messages", "manage");
+    var section = plugin.config().messages().manage();
     var rows = new ArrayList<Component>();
     var buttons = new ArrayList<Component>();
     Function<String, Function<Component, Component>> suggest = (name) -> (c) -> c.clickEvent(suggestCommand(name.formatted(faq.id())));
     Function<String, Function<Component, Component>> cmd = (name) -> (c) -> c.clickEvent(runCommand(name.formatted(faq.id())));
 
     List.of(
-        new ButtonType("group", suggest.apply("/faqeditor set %s group ")),
-        new ButtonType("rename", suggest.apply("/faqeditor set %s topic ")),
-        new ButtonType("move", cmd.apply("/faqeditor set %s positionmenu")),
-        new ButtonType("delete", "manage.delete", suggest.apply("/faqeditor delete %s")),
-        new ButtonType("history", "admin.history", cmd.apply("/faqeditor admin history %s"))
+        ButtonKind.GROUP.type(suggest.apply("/faqeditor set %s group ")),
+        ButtonKind.RENAME.type(suggest.apply("/faqeditor set %s topic ")),
+        ButtonKind.MOVE.type(cmd.apply("/faqeditor set %s positionmenu")),
+        ButtonKind.DELETE.type("manage.delete", suggest.apply("/faqeditor delete %s")),
+        ButtonKind.HISTORY.type("admin.history", cmd.apply("/faqeditor admin history %s"))
     ).forEach(i -> {
       if (permissionChecker.test("vfaq." + i.permission())) {
         buttons.add(makeButton(i.name(), i.factory()));
@@ -149,15 +146,15 @@ public class Manager {
     buttons.clear();
 
     if (permissionChecker.test("vfaq.manage.edit.alias")) {
-      buttons.add(m.parse(Objects.requireNonNull(section.getString("alias.list")), Template.of("count", String.valueOf(faq.alias().size()))));
+      buttons.add(m.parse(section.alias().list(), Template.of("count", String.valueOf(faq.alias().size()))));
       buttons.add(
-          m.parse(Objects.requireNonNull(section.getString("alias.add")))
+          m.parse(section.alias().add())
               .clickEvent(suggestCommand("/faqeditor set %s alias add ".formatted(faq.id())))
       );
       faq.alias().forEach(a -> {
             buttons.add(space());
             buttons.add(
-                m.parse(Objects.requireNonNull(section.getString("alias.remove")), Template.of("name", a))
+                m.parse(section.alias().remove(), Template.of("name", a))
                     .clickEvent(suggestCommand("/faqeditor set %s alias remove %s".formatted(faq.id(), a)))
             );
           });
@@ -168,17 +165,14 @@ public class Manager {
   }
 
   public void applyEditor(CommandSender sender, int id, String token, Field field) {
-    var editor = plugin.section("mm_editor");
-    var editorLink = Objects.requireNonNull(editor.getString("url"));
-    var prefix = plugin.prefixFor(sender, "editor");
+    var editorLink = plugin.config().mmEditor().url();
+    var prefix = plugin.prefixFor(sender, PrefixKind.EDITOR);
 
     prefix.response(text("Processing change...", GRAY, ITALIC));
 
     try {
-      var output = new AdventureEditorAPI(URI.create(editorLink)).retrieveSession(token).get();
-      var modified = updateFaqTopic(id, field, output.replace("\\n", "\n"), sender);
-      // TODO: uncomment when https://github.com/KyoriPowered/adventure-webui/pull/24 is merged
-      // var modified = updateFaqTopic(id, field, output, author);
+      var output = new AdventureEditorAPI(editorLink).retrieveSession(token).get();
+      var modified = updateFaqTopic(id, field, output, sender);
       modified.ifPresentOrElse(
           faqTopic -> prefix.logged(text("Success! %s of %s (#%s) was modified".formatted(field.name(), faqTopic.topic(), id))),
           () ->       prefix.logged(text("Saving new %s failed?".formatted(field.name()), RED))
@@ -189,14 +183,15 @@ public class Manager {
     }
   }
 
-  public Component makePreview(String type, @NotNull Topic topic, @Nullable String body) {
-    var section = plugin.section("messages", "manage", "list", "preview", type);
+  public Component makePreview(Field type, @NotNull Topic topic) {
+    var section = plugin.config().messages().manage().list().preview().get(type);
+    var body = topic.findField(type);
 
     if (body == null || body.isBlank()) {
-      return m.parse(Objects.requireNonNull(section.getString("empty")));
+      return m.parse(section.empty());
     }
 
-    return m.parse(Objects.requireNonNull(section.getString("label")))
+    return m.parse(section.label())
         .hoverEvent(showText(m.parse(body)))
         .clickEvent(runCommand("/faqeditor set %s editor %s".formatted(topic.id(), type)));
   }
@@ -216,10 +211,5 @@ public class Manager {
     return (sender instanceof Player p) ? p.getUniqueId() : NULL_UUID;
   }
 
-  private record ButtonType(String name, String permission, Function<Component, Component> factory) {
-    private ButtonType(String name, Function<Component, Component> factory) {
-      this(name, "manage.edit." + name, factory);
-    }
-  }
 }
 

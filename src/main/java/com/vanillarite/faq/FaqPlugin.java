@@ -4,16 +4,14 @@ import cloud.commandframework.CommandTree;
 import cloud.commandframework.annotations.AnnotationParser;
 import cloud.commandframework.arguments.parser.ParserParameters;
 import cloud.commandframework.arguments.parser.StandardParameters;
-import cloud.commandframework.bukkit.BukkitPluginRegistrationHandler;
 import cloud.commandframework.execution.AsynchronousCommandExecutionCoordinator;
 import cloud.commandframework.execution.CommandExecutionCoordinator;
-import cloud.commandframework.execution.CommandSuggestionProcessor;
-import cloud.commandframework.execution.preprocessor.CommandPreprocessingContext;
 import cloud.commandframework.meta.CommandMeta;
 import cloud.commandframework.paper.PaperCommandManager;
-import com.destroystokyo.paper.event.server.AsyncTabCompleteEvent;
 import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
+import com.vanillarite.faq.config.Config;
+import com.vanillarite.faq.config.PrefixKind;
 import com.vanillarite.faq.util.Prefixer;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -22,25 +20,28 @@ import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.EventPriority;
-import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.units.qual.C;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.spongepowered.configurate.ConfigurateException;
+import org.spongepowered.configurate.objectmapping.ObjectMapper;
+import org.spongepowered.configurate.util.NamingSchemes;
+import org.spongepowered.configurate.yaml.YamlConfigurationLoader;
 
-import java.util.ArrayList;
+import java.io.File;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 public final class FaqPlugin extends JavaPlugin {
-  public static final MiniMessage m = MiniMessage.get();
+  public static final MiniMessage m = MiniMessage.miniMessage();
   private boolean isBungee = false;
+  private Config config;
+
+  public Config config() {
+    return config;
+  }
 
   @Override
   public void onEnable() {
@@ -49,6 +50,21 @@ public final class FaqPlugin extends JavaPlugin {
     isBungee = getServer().spigot().getSpigotConfig().getBoolean("settings.bungeecord");
     if (isBungee) {
       getServer().getMessenger().registerOutgoingPluginChannel(this, "BungeeCord");
+    }
+
+    final var objectFactory = ObjectMapper
+        .factoryBuilder()
+        .defaultNamingScheme(NamingSchemes.SNAKE_CASE)
+        .build();
+    final var configBuilder = YamlConfigurationLoader.builder()
+        .defaultOptions(opts -> opts.serializers(builder -> builder.registerAnnotatedObjects(objectFactory)));
+    final var configFile = new File(this.getDataFolder(), "config.yml");
+    final var configLoader = configBuilder.file(configFile).build();
+    final var defaultLoader = configBuilder.url(this.getClass().getResource("/config.yml")).build();
+    try {
+      config = objectFactory.get(Config.class).load(configLoader.load().mergeFrom(defaultLoader.load()));
+    } catch (ConfigurateException e) {
+      e.printStackTrace();
     }
 
     final Function<CommandTree<CommandSender>, CommandExecutionCoordinator<CommandSender>>
@@ -67,23 +83,20 @@ public final class FaqPlugin extends JavaPlugin {
     }
     manager.registerBrigadier();
     manager.registerAsynchronousCompletions();
-    manager.setCommandSuggestionProcessor(new CommandSuggestionProcessor<>() {
-      @Override
-      public @NonNull List<String> apply(@NonNull CommandPreprocessingContext<CommandSender> context, @NonNull List<String> strings) {
-        final String input;
-        if (context.getInputQueue().isEmpty()) {
-          input = "";
-        } else {
-          input = context.getInputQueue().peek();
-        }
-        final List<String> suggestions = new LinkedList<>();
-        for (final String suggestion : strings) {
-          if (suggestion.toLowerCase().startsWith(input.toLowerCase())) {
-            suggestions.add(suggestion);
-          }
-        }
-        return suggestions;
+    manager.setCommandSuggestionProcessor((context, strings) -> {
+      final String input;
+      if (context.getInputQueue().isEmpty()) {
+        input = "";
+      } else {
+        input = context.getInputQueue().peek();
       }
+      final List<String> suggestions = new LinkedList<>();
+      for (final String suggestion : strings) {
+        if (suggestion.toLowerCase().startsWith(input.toLowerCase())) {
+          suggestions.add(suggestion);
+        }
+      }
+      return suggestions;
     });
     final Function<ParserParameters, CommandMeta> commandMetaFunction =
         p ->
@@ -98,6 +111,8 @@ public final class FaqPlugin extends JavaPlugin {
     var commandHolder = new Commands(this);
     annotationParser.parse(commandHolder);
     getLogger().info(manager.getCommands().toString());
+
+    getServer().getScheduler().runTaskLater(this, () -> getLogger().info(config.toString()), 50);
   }
 
   public void networkBroadcast(@NotNull Component c, @Nullable CommandSender sender) {
@@ -128,18 +143,12 @@ public final class FaqPlugin extends JavaPlugin {
 
 
   public void debug(String msg) {
-    if (getConfig().getBoolean("debug")) {
+    if (config.debug()) {
       getLogger().info("[DEBUG] %s".formatted(msg));
     }
   }
 
-  public ConfigurationSection section(String... p) {
-    var sep = Objects.requireNonNull(getConfig().getRoot()).options().pathSeparator();
-    var path = String.join(Character.toString(sep), p);
-    return Objects.requireNonNull(getConfig().getConfigurationSection(path));
-  }
-
-  public Prefixer prefixFor(CommandSender sender, String kind) {
-    return new Prefixer(sender, Objects.requireNonNull(getConfig().getString("prefix." + kind)));
+  public Prefixer prefixFor(CommandSender sender, PrefixKind kind) {
+    return new Prefixer(sender, config.prefix().get(kind));
   }
 }

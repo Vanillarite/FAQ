@@ -58,7 +58,6 @@ tasks {
         relocate("org.spongepowered.configurate", "${rootProject.group}.faq.shade.configurate")
 
         archiveClassifier.set(null as String?)
-        archiveFileName.set(project.name + ".jar")
         destinationDirectory.set(rootProject.tasks.shadowJar.get().destinationDirectory.get())
     }
     build {

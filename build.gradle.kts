@@ -1,21 +1,11 @@
-import java.io.ByteArrayOutputStream
-
 plugins {
     id("com.github.johnrengelman.shadow") version "7.0.0"
     java
 }
 
-val gitBuild: String = run {
-    val stdout = ByteArrayOutputStream()
-    rootProject.exec {
-        commandLine("git", "rev-list", "--count", "HEAD")
-        standardOutput = stdout
-    }
-    stdout.toString().trim()
-}
-
+val buildNum = System.getenv("CI_PIPELINE_IID") ?: "dirty"
 group = "com.vanillarite"
-version = "0.3.0-b$gitBuild"
+version = "0.3.0-$buildNum"
 
 repositories {
     mavenCentral()

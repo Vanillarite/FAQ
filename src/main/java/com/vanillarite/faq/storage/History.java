@@ -5,7 +5,6 @@ import com.vanillarite.faq.storage.supabase.Field;
 import com.vanillarite.faq.storage.supabase.Method;
 import com.vanillarite.faq.util.DurationUtil;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.format.TextColor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -70,12 +69,12 @@ public record History(
     } else if (field == Field.TOPIC || field == Field.ALIAS || field == Field.GROUP) {
       return text(supplier.get(), style(ITALIC));
     } else {
-      return text((concise ? "%s" : "%s chars").formatted(supplier.get().length()), style(ITALIC)).hoverEvent(showText(m.parse(supplier.get())));
+      return text((concise ? "%s" : "%s chars").formatted(supplier.get().length()), style(ITALIC)).hoverEvent(showText(m.deserialize(supplier.get())));
     }
   }
 
   public Component asComponent() {
-    var component = TextComponent.ofChildren(
+    var component = Component.textOfChildren(
         text("#", GRAY),
         text(String.format("%04d", id)),
         text(": ", GRAY),
@@ -113,17 +112,17 @@ public record History(
 
   private Component differenceComponent() {
     if (after.length() == 0) {
-      return TextComponent.ofChildren(
+      return Component.textOfChildren(
           fieldAwareContent(this::beforeOrBlank),
           text(" erased", WHITE, BOLD, ITALIC)
       );
     } else if (beforeOrBlank().length() == 0)  {
-      return TextComponent.ofChildren(
+      return Component.textOfChildren(
           text("new ", GRAY),
           fieldAwareContent(this::after)
       );
     } else {
-      return TextComponent.ofChildren(
+      return Component.textOfChildren(
           fieldAwareContent(this::beforeOrBlank, true),
           text(" → ", GRAY),
           fieldAwareContent(this::after)

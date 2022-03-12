@@ -15,20 +15,16 @@ repositories {
 }
 
 dependencies {
-    compileOnly("io.papermc.paper", "paper-api", "1.17.1-R0.1-SNAPSHOT")
-    implementation("cloud.commandframework", "cloud-paper", "1.5.0")
-    implementation("cloud.commandframework", "cloud-annotations", "1.5.0")
-    implementation("net.kyori", "adventure-text-minimessage", "4.2.0-SNAPSHOT") {
-        exclude("net.kyori", "adventure-api")
-    }
-    implementation("net.kyori", "adventure-text-feature-pagination", "4.0.0-SNAPSHOT")
+    compileOnly("io.papermc.paper", "paper-api", "1.18.2-R0.1-SNAPSHOT")
+    implementation("cloud.commandframework", "cloud-paper", "1.6.2")
+    implementation("cloud.commandframework", "cloud-annotations", "1.6.2")
     implementation("io.github.java-diff-utils", "java-diff-utils", "4.5")
     implementation("org.spongepowered", "configurate-yaml", "4.1.2")
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_16
-    targetCompatibility = JavaVersion.VERSION_16
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
 }
 
 tasks {
@@ -43,7 +39,6 @@ tasks {
 
         relocate("cloud.commandframework", "${rootProject.group}.faq.shade.cloud")
         relocate("io.leangen.geantyref", "${rootProject.group}.faq.shade.typetoken")
-        relocate("net.kyori.adventure.text.minimessage", "${rootProject.group}.faq.shade.minimessage")
         relocate("com.github.difflib", "${rootProject.group}.faq.shade.difflib")
         relocate("org.spongepowered.configurate", "${rootProject.group}.faq.shade.configurate")
 

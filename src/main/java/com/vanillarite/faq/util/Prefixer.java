@@ -2,7 +2,7 @@ package com.vanillarite.faq.util;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
-import net.kyori.adventure.text.minimessage.Template;
+import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -25,7 +25,7 @@ public class Prefixer {
 
   private Component prefixMemo() {
     if (prefix == null) {
-      prefix = m.parse(miniMessagePrefix);
+      prefix = m.deserialize(miniMessagePrefix);
     }
     return prefix;
   }
@@ -40,37 +40,37 @@ public class Prefixer {
   }
 
   public void logged(Component message) {
-    var component = TextComponent.ofChildren(prefixMemo(), message);
+    var component = Component.textOfChildren(prefixMemo(), message);
     loggedSend(component);
   }
 
   public void response(Component message) {
-    var component = TextComponent.ofChildren(prefixMemo(), message);
+    var component = Component.textOfChildren(prefixMemo(), message);
     sender.sendMessage(component);
   }
 
   public void logged(String miniMessage) {
-    var component = m.parse(miniMessagePrefix + miniMessage);
+    var component = m.deserialize(miniMessagePrefix + miniMessage);
     loggedSend(component);
   }
 
-  public Component component(String miniMessage, Template... templates) {
-    return m.parse(miniMessagePrefix + miniMessage, templates);
+  public Component component(String miniMessage, TagResolver... templates) {
+    return m.deserialize(miniMessagePrefix + miniMessage, templates);
   }
 
-  public Component component(String miniMessage, List<Template> templates) {
-    return m.parse(miniMessagePrefix + miniMessage, templates);
+  public Component component(String miniMessage, List<TagResolver> templates) {
+    return m.deserialize(miniMessagePrefix + miniMessage, TagResolver.resolver(templates));
   }
 
-  public void logged(String miniMessage, Template... templates) {
+  public void logged(String miniMessage, TagResolver... templates) {
     loggedSend(component(miniMessage, templates));
   }
 
-  public void response(String miniMessage, Template... templates) {
+  public void response(String miniMessage, TagResolver... templates) {
     sender.sendMessage(component(miniMessage, templates));
   }
 
-  public void response(String miniMessage, List<Template> templates) {
+  public void response(String miniMessage, List<TagResolver> templates) {
     sender.sendMessage(component(miniMessage, templates));
   }
 }

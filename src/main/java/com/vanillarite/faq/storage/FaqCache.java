@@ -3,7 +3,6 @@ package com.vanillarite.faq.storage;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import com.vanillarite.faq.FaqPlugin;
 import com.vanillarite.faq.storage.supabase.Field;
 import com.vanillarite.faq.storage.supabase.Method;
@@ -22,8 +21,9 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static com.google.gson.JsonParser.parseReader;
 
 public class FaqCache extends SingleCache<ArrayList<Topic>> {
   private final FaqPlugin plugin;
@@ -76,8 +76,7 @@ public class FaqCache extends SingleCache<ArrayList<Topic>> {
       HttpResponse<InputStream> faqList = HttpClient.newHttpClient()
           .send(faqListRequest, HttpResponse.BodyHandlers.ofInputStream());
 
-      var jp = new JsonParser();
-      JsonElement root = jp.parse(new InputStreamReader(faqList.body(), StandardCharsets.UTF_8));
+      JsonElement root = parseReader(new InputStreamReader(faqList.body(), StandardCharsets.UTF_8));
       JsonArray faqListObject = root.getAsJsonArray();
 
       var history = new ArrayList<History>();
@@ -95,8 +94,7 @@ public class FaqCache extends SingleCache<ArrayList<Topic>> {
       HttpResponse<InputStream> faqList = HttpClient.newHttpClient()
           .send(faqListRequest, HttpResponse.BodyHandlers.ofInputStream());
 
-      var jp = new JsonParser();
-      JsonElement root = jp.parse(new InputStreamReader(faqList.body(), StandardCharsets.UTF_8));
+      JsonElement root = parseReader(new InputStreamReader(faqList.body(), StandardCharsets.UTF_8));
       JsonObject newFaqObject = root.getAsJsonObject();
 
       return Optional.of(History.fromJson(newFaqObject));
@@ -112,8 +110,7 @@ public class FaqCache extends SingleCache<ArrayList<Topic>> {
       HttpResponse<InputStream> faqList = HttpClient.newHttpClient()
           .send(faqListRequest, HttpResponse.BodyHandlers.ofInputStream());
 
-      var jp = new JsonParser();
-      JsonElement root = jp.parse(new InputStreamReader(faqList.body(), StandardCharsets.UTF_8));
+      JsonElement root = parseReader(new InputStreamReader(faqList.body(), StandardCharsets.UTF_8));
       JsonArray faqListObject = root.getAsJsonArray();
 
       var topics = new ArrayList<Topic>();
@@ -163,8 +160,7 @@ public class FaqCache extends SingleCache<ArrayList<Topic>> {
         throw new IllegalStateException("Failed to patch? Got %s - %s".formatted(faqList.statusCode(), new String(faqList.body().readAllBytes())));
       }
 
-      var jp = new JsonParser();
-      JsonElement root = jp.parse(new InputStreamReader(faqList.body(), StandardCharsets.UTF_8));
+      JsonElement root = parseReader(new InputStreamReader(faqList.body(), StandardCharsets.UTF_8));
       JsonObject newFaqObject = root.getAsJsonObject();
 
       invalidate();
@@ -193,8 +189,7 @@ public class FaqCache extends SingleCache<ArrayList<Topic>> {
         throw new IllegalStateException("Failed to patch? Got %s - %s".formatted(faqList.statusCode(), new String(faqList.body().readAllBytes())));
       }
 
-      var jp = new JsonParser();
-      JsonElement root = jp.parse(new InputStreamReader(faqList.body(), StandardCharsets.UTF_8));
+      JsonElement root = parseReader(new InputStreamReader(faqList.body(), StandardCharsets.UTF_8));
       JsonObject newFaqObject = root.getAsJsonObject();
 
       invalidate();
@@ -233,8 +228,7 @@ public class FaqCache extends SingleCache<ArrayList<Topic>> {
         throw new IllegalStateException("Failed to patch? Got %s - %s".formatted(faqList.statusCode(), new String(faqList.body().readAllBytes())));
       }
 
-      var jp = new JsonParser();
-      JsonElement root = jp.parse(new InputStreamReader(faqList.body(), StandardCharsets.UTF_8));
+      JsonElement root = parseReader(new InputStreamReader(faqList.body(), StandardCharsets.UTF_8));
       JsonObject newFaqObject = root.getAsJsonObject();
 
       invalidate();
@@ -262,8 +256,7 @@ public class FaqCache extends SingleCache<ArrayList<Topic>> {
         throw new IllegalStateException("Failed to post? Got %s - %s".formatted(faqList.statusCode(), new String(faqList.body().readAllBytes())));
       }
 
-      var jp = new JsonParser();
-      JsonElement root = jp.parse(new InputStreamReader(faqList.body(), StandardCharsets.UTF_8));
+      JsonElement root = parseReader(new InputStreamReader(faqList.body(), StandardCharsets.UTF_8));
       JsonObject newFaqObject = root.getAsJsonObject();
 
       var newTopic = Topic.fromJson(newFaqObject);

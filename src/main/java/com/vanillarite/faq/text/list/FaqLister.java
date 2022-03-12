@@ -9,7 +9,7 @@ import com.vanillarite.faq.storage.FaqCache;
 import com.vanillarite.faq.storage.Topic;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
-import net.kyori.adventure.text.minimessage.Template;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -59,7 +59,7 @@ public final class FaqLister {
 
   private void emitLine() {
     if (topics.size() > 0) {
-      var line = empty().append(m.parse(section.prefix()));
+      var line = empty().append(m.deserialize(section.prefix()));
       for (var t : topics) line = line.append(t);
       lineConsumer.accept(line);
       topics.clear();
@@ -75,13 +75,13 @@ public final class FaqLister {
   }
 
   private Component addTopic(Topic faq) {
-    var c = m.parse(section.eachTopic(),
-        Template.of("topic", faq.topic())
+    var c = m.deserialize(section.eachTopic(),
+        Placeholder.unparsed("topic", faq.topic())
     ).clickEvent(
         ClickEvent.runCommand("/" + command + " " + faq.topic())
     ).hoverEvent(
         showText(
-            m.parse(section.hover(), Template.of("topic", faq.topic()))
+            m.deserialize(section.hover(), Placeholder.unparsed("topic", faq.topic()))
         )
     );
     if (topicCallback != null) c = topicCallback.apply(faq, c);
@@ -112,7 +112,7 @@ public final class FaqLister {
   }
 
   public void run() {
-    lineConsumer.accept(m.parse(section.header()));
+    lineConsumer.accept(m.deserialize(section.header()));
 
     topicsByGroup()
         .asMap()
@@ -125,7 +125,7 @@ public final class FaqLister {
         )
         .forEachOrdered((topicGroup) -> {
           if (!topicGroup.getKey().equals(defaultGroup)) {
-            lineConsumer.accept(m.parse(Objects.requireNonNull(generalSection.groupSeparator()), Template.of("group", topicGroup.getKey())));
+            lineConsumer.accept(m.deserialize(Objects.requireNonNull(generalSection.groupSeparator()), Placeholder.unparsed("group", topicGroup.getKey())));
           }
           emitTopicGroup(topicGroup.getValue(), this::addTopic);
         });

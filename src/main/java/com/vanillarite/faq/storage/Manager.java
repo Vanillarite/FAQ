@@ -9,7 +9,7 @@ import com.vanillarite.faq.storage.supabase.Field;
 import com.vanillarite.faq.storage.supabase.Method;
 import com.vanillarite.faq.storage.supabase.SupabaseConnection;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.minimessage.Template;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -29,7 +29,7 @@ import java.util.function.Predicate;
 import static com.vanillarite.faq.FaqPlugin.m;
 import static net.kyori.adventure.text.Component.space;
 import static net.kyori.adventure.text.Component.text;
-import static net.kyori.adventure.text.TextComponent.ofChildren;
+import static net.kyori.adventure.text.Component.textOfChildren;
 import static net.kyori.adventure.text.event.ClickEvent.*;
 import static net.kyori.adventure.text.event.HoverEvent.showText;
 import static net.kyori.adventure.text.format.NamedTextColor.*;
@@ -121,7 +121,7 @@ public class Manager {
 
   private Component makeButton(ButtonKind kind, Function<Component, Component> transform) {
     var section = plugin.config().messages().manage().edit().button();
-    return transform.apply(m.parse(section.get(kind)));
+    return transform.apply(m.deserialize(section.get(kind)));
   }
 
   public List<Component> makeButtons(Topic faq, Predicate<String> permissionChecker) throws ExecutionException, InterruptedException {
@@ -142,24 +142,24 @@ public class Manager {
         buttons.add(makeButton(i.name(), i.factory()));
       }
     });
-    rows.add(ofChildren(buttons.toArray(new Component[0])));
+    rows.add(textOfChildren(buttons.toArray(new Component[0])));
     buttons.clear();
 
     if (permissionChecker.test("vfaq.manage.edit.alias")) {
-      buttons.add(m.parse(section.alias().list(), Template.of("count", String.valueOf(faq.alias().size()))));
+      buttons.add(m.deserialize(section.alias().list(), Placeholder.unparsed("count", String.valueOf(faq.alias().size()))));
       buttons.add(
-          m.parse(section.alias().add())
+          m.deserialize(section.alias().add())
               .clickEvent(suggestCommand("/faqeditor set %s alias add ".formatted(faq.id())))
       );
       faq.alias().forEach(a -> {
             buttons.add(space());
             buttons.add(
-                m.parse(section.alias().remove(), Template.of("name", a))
+                m.deserialize(section.alias().remove(), Placeholder.unparsed("name", a))
                     .clickEvent(suggestCommand("/faqeditor set %s alias remove %s".formatted(faq.id(), a)))
             );
           });
     }
-    rows.add(ofChildren(buttons.toArray(new Component[0])));
+    rows.add(textOfChildren(buttons.toArray(new Component[0])));
 
     return rows;
   }
@@ -188,11 +188,11 @@ public class Manager {
     var body = topic.findField(type);
 
     if (body == null || body.isBlank()) {
-      return m.parse(section.empty());
+      return m.deserialize(section.empty());
     }
 
-    return m.parse(section.label())
-        .hoverEvent(showText(m.parse(body)))
+    return m.deserialize(section.label())
+        .hoverEvent(showText(m.deserialize(body)))
         .clickEvent(runCommand("/faqeditor set %s editor %s".formatted(topic.id(), type)));
   }
 

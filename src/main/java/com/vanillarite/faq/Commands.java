@@ -17,7 +17,8 @@ import com.vanillarite.faq.storage.supabase.Method;
 import com.vanillarite.faq.text.list.FaqLister;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
-import net.kyori.adventure.text.minimessage.Template;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
+import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
 import org.jetbrains.annotations.NotNull;
@@ -87,7 +88,7 @@ public class Commands {
           if (t.group().equals(defaultGroup) || sender.hasPermission("vfaq.group." + t.group())) {
             prefix.response(
                 section.header() + "<r>\n\n" + t.content() + "\n",
-                Template.of("topic", t.topic())
+                Placeholder.unparsed("topic", t.topic())
             );
           } else {
             prefix.logged(section.unknownTopic());
@@ -134,7 +135,7 @@ public class Commands {
           }
           var preface = t.smartPreface(section.maxPreviewLines());
           var keepReading = showText(
-              m.parse(section.keepReadingHover(), Template.of("topic", t.topic()))
+              m.deserialize(section.keepReadingHover(), Placeholder.unparsed("topic", t.topic()))
           );
           preface.lines().forEach(i -> {
             var component = prefix.component(i);
@@ -199,52 +200,52 @@ public class Commands {
     var section = plugin.config().messages().manage().list();
     var defaultGroup = plugin.config().messages().list().defaultGroup();
 
-    prefix.logged(section.header(), Template.of("count", String.valueOf(manager.cache().invalidateAndGet().size())));
+    prefix.logged(section.header(), Placeholder.unparsed("count", String.valueOf(manager.cache().invalidateAndGet().size())));
     manager.cache().get().stream().sorted(Comparator.comparingInt(Topic::id)).forEach(topic -> {
       Component topicComponent;
       Component aliases = empty();
-      ArrayList<Template> placeholders = new ArrayList<>();
-      placeholders.add(Template.of("id", String.valueOf(topic.id())));
-      placeholders.add(Template.of("author", Manager.componentAuthor(topic.author())));
-      placeholders.add(Template.of("author_uuid", topic.author().toString()));
-      placeholders.add(Template.of("group", topic.group()));
-      placeholders.add(Template.of("created_ago", formatInstantToNow(topic.createdAt())));
-      placeholders.add(Template.of("updated_ago", formatInstantToNow(topic.updatedAt())));
+      ArrayList<TagResolver> placeholders = new ArrayList<>();
+      placeholders.add(Placeholder.unparsed("id", String.valueOf(topic.id())));
+      placeholders.add(Placeholder.component("author", Manager.componentAuthor(topic.author())));
+      placeholders.add(Placeholder.unparsed("author_uuid", topic.author().toString()));
+      placeholders.add(Placeholder.unparsed("group", topic.group()));
+      placeholders.add(Placeholder.unparsed("created_ago", formatInstantToNow(topic.createdAt())));
+      placeholders.add(Placeholder.unparsed("updated_ago", formatInstantToNow(topic.updatedAt())));
       if (topic.group().equals(defaultGroup)) {
-        topicComponent = m.parse(
+        topicComponent = m.deserialize(
             section.topic().defaultGroup(),
-            Template.of("topic", topic.topic())
+            Placeholder.unparsed("topic", topic.topic())
         );
       } else {
-        topicComponent = m.parse(
+        topicComponent = m.deserialize(
             section.topic().customGroup(),
-            Template.of("topic", topic.topic()),
-            Template.of("group", topic.group())
+            Placeholder.unparsed("topic", topic.topic()),
+            Placeholder.unparsed("group", topic.group())
         );
       }
       topicComponent = topicComponent.hoverEvent(showText(
-          m.parse(section.topic().hover(), placeholders)
+          m.deserialize(section.topic().hover(), TagResolver.resolver(placeholders))
       ));
       if (topic.alias().size() > 0) {
-        aliases = m.parse(section.aliases(), Template.of("aliases", String.join(", ", topic.alias())));
+        aliases = m.deserialize(section.aliases(), Placeholder.unparsed("aliases", String.join(", ", topic.alias())));
       }
-      placeholders.add(Template.of("topic", topicComponent));
-      placeholders.add(Template.of("aliases", aliases));
-      placeholders.add(Template.of("edit_button", m.parse(section.editLabel())
+      placeholders.add(Placeholder.component("topic", topicComponent));
+      placeholders.add(Placeholder.component("aliases", aliases));
+      placeholders.add(Placeholder.component("edit_button", m.deserialize(section.editLabel())
           .clickEvent(runCommand("/faqeditor actions %s".formatted(topic.id())))
-          .hoverEvent(showText(m.parse(section.editLabelHover(),
-              Template.of("topic", topicComponent))
+          .hoverEvent(showText(m.deserialize(section.editLabelHover(),
+              Placeholder.component("topic", topicComponent))
           ))));
-      placeholders.add(Template.of("preview_content", manager.makePreview(Field.CONTENT, topic)));
-      placeholders.add(Template.of("preview_preface", manager.makePreview(Field.PREFACE, topic)));
+      placeholders.add(Placeholder.component("preview_content", manager.makePreview(Field.CONTENT, topic)));
+      placeholders.add(Placeholder.component("preview_preface", manager.makePreview(Field.PREFACE, topic)));
 
       prefix.response(
           section.line() + (topic.content().isBlank() ? section.incomplete() : ""), placeholders
       );
     });
     prefix.response(section.hint(),
-        Template.of("preview_content", m.parse(section.preview().content().label())),
-        Template.of("preview_preface", m.parse(section.preview().preface().label()))
+        Placeholder.parsed("preview_content", section.preview().content().label()),
+        Placeholder.parsed("preview_preface", section.preview().preface().label())
     );
   }
 
@@ -260,7 +261,7 @@ public class Commands {
     var existing = manager.cache().find(id);
 
     try {
-      prefix.response(section.header(), Template.of("topic", existing.topic()));
+      prefix.response(section.header(), Placeholder.unparsed("topic", existing.topic()));
       manager.makeButtons(existing, sender::hasPermission).forEach(prefix::response);
       prefix.response(Component.empty());
     } catch (ExecutionException | InterruptedException e) {
@@ -461,9 +462,9 @@ public class Commands {
         relevantGroup.stream().filter(i -> i.pos().line() != 0).toList(),
         (faq) -> {
           lastPos.set(faq.pos());
-          return m.parse(
+          return m.deserialize(
               lister.section.eachTopic(),
-              Template.of("topic", faq.topic())
+              Placeholder.unparsed("topic", faq.topic())
           );
         }
     );
@@ -566,7 +567,7 @@ public class Commands {
           case DELETE -> text(" - ", RED);
           case CHANGE -> text(" > ", YELLOW);
         };
-        sender.sendMessage(text("", GRAY).append(prefix).append(text("| ", DARK_GRAY)).append(m.parse(r.getOldLine())));
+        sender.sendMessage(text("", GRAY).append(prefix).append(text("| ", DARK_GRAY)).append(m.deserialize(r.getOldLine())));
       });
       sender.sendMessage(delimiter);
     } catch (DiffException e) {

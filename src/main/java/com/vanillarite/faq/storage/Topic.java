@@ -91,6 +91,11 @@ public record Topic(
   }
 
   public record Pos(int line, int col) {
+    public static Pos fromTuple(String tuple) {
+      var split = tuple.substring(1, tuple.length() - 1).split(",");
+      return new Pos(Integer.parseInt(split[0]), Integer.parseInt(split[1]));
+    }
+
     public JsonObject toJson() {
       var jsonObject = new JsonObject();
       jsonObject.addProperty("line", line);
@@ -100,11 +105,6 @@ public record Topic(
 
     public String tuple() {
       return "(%s,%s)".formatted(line, col);
-    }
-
-    public static Pos fromTuple(String tuple) {
-      var split = tuple.substring(1, tuple.length() - 1).split(",");
-      return new Pos(Integer.parseInt(split[0]), Integer.parseInt(split[1]));
     }
   }
 }

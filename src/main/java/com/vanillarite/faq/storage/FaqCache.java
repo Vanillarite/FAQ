@@ -27,7 +27,9 @@ import static com.google.gson.JsonParser.parseReader;
 
 public class FaqCache extends SingleCache<ArrayList<Topic>> {
   private final FaqPlugin plugin;
-  public FaqCache(Callable<ArrayList<Topic>> supplier, long duration, TimeUnit unit, FaqPlugin plugin) {
+
+  public FaqCache(
+      Callable<ArrayList<Topic>> supplier, long duration, TimeUnit unit, FaqPlugin plugin) {
     super(supplier, duration, unit);
     this.plugin = plugin;
   }
@@ -41,17 +43,25 @@ public class FaqCache extends SingleCache<ArrayList<Topic>> {
   }
 
   public Optional<Topic> findTopicOrAlias(String topic) {
-    var direct = get().stream()
-        .filter(i -> !i.content().isBlank())
-        .filter(i -> i.topic().equalsIgnoreCase(topic) || i.alias().stream().anyMatch(a -> a.equalsIgnoreCase(topic)))
-        .findFirst();
+    var direct =
+        get().stream()
+            .filter(i -> !i.content().isBlank())
+            .filter(
+                i ->
+                    i.topic().equalsIgnoreCase(topic)
+                        || i.alias().stream().anyMatch(a -> a.equalsIgnoreCase(topic)))
+            .findFirst();
     if (direct.isPresent()) return direct;
     else {
-      var close = get().stream()
-          .filter(i -> !i.content().isBlank())
-          .filter(i -> i.topic().toLowerCase().startsWith(topic.toLowerCase()) ||
-              i.alias().stream().anyMatch(a -> a.toLowerCase().startsWith(topic.toLowerCase())))
-          .toList();
+      var close =
+          get().stream()
+              .filter(i -> !i.content().isBlank())
+              .filter(
+                  i ->
+                      i.topic().toLowerCase().startsWith(topic.toLowerCase())
+                          || i.alias().stream()
+                              .anyMatch(a -> a.toLowerCase().startsWith(topic.toLowerCase())))
+              .toList();
       if (close.size() == 1) {
         return Optional.of(close.get(0));
       } else {
@@ -73,8 +83,9 @@ public class FaqCache extends SingleCache<ArrayList<Topic>> {
   public Optional<ArrayList<History>> supabaseGetHistoryForFaq(SupabaseConnection sb, int forFaq) {
     try {
       HttpRequest faqListRequest = sb.request("history?faq=eq." + forFaq).GET().build();
-      HttpResponse<InputStream> faqList = HttpClient.newHttpClient()
-          .send(faqListRequest, HttpResponse.BodyHandlers.ofInputStream());
+      HttpResponse<InputStream> faqList =
+          HttpClient.newHttpClient()
+              .send(faqListRequest, HttpResponse.BodyHandlers.ofInputStream());
 
       JsonElement root = parseReader(new InputStreamReader(faqList.body(), StandardCharsets.UTF_8));
       JsonArray faqListObject = root.getAsJsonArray();
@@ -91,8 +102,9 @@ public class FaqCache extends SingleCache<ArrayList<Topic>> {
   public Optional<History> supabaseGetHistorySingle(SupabaseConnection sb, int id) {
     try {
       HttpRequest faqListRequest = sb.single("history?id=eq." + id).GET().build();
-      HttpResponse<InputStream> faqList = HttpClient.newHttpClient()
-          .send(faqListRequest, HttpResponse.BodyHandlers.ofInputStream());
+      HttpResponse<InputStream> faqList =
+          HttpClient.newHttpClient()
+              .send(faqListRequest, HttpResponse.BodyHandlers.ofInputStream());
 
       JsonElement root = parseReader(new InputStreamReader(faqList.body(), StandardCharsets.UTF_8));
       JsonObject newFaqObject = root.getAsJsonObject();
@@ -107,8 +119,9 @@ public class FaqCache extends SingleCache<ArrayList<Topic>> {
   public Optional<ArrayList<Topic>> supabaseGet(SupabaseConnection sb) {
     try {
       HttpRequest faqListRequest = sb.request("faqs?active=is.true").GET().build();
-      HttpResponse<InputStream> faqList = HttpClient.newHttpClient()
-          .send(faqListRequest, HttpResponse.BodyHandlers.ofInputStream());
+      HttpResponse<InputStream> faqList =
+          HttpClient.newHttpClient()
+              .send(faqListRequest, HttpResponse.BodyHandlers.ofInputStream());
 
       JsonElement root = parseReader(new InputStreamReader(faqList.body(), StandardCharsets.UTF_8));
       JsonArray faqListObject = root.getAsJsonArray();
@@ -122,7 +135,15 @@ public class FaqCache extends SingleCache<ArrayList<Topic>> {
     }
   }
 
-  public void logHistory(SupabaseConnection sb, int id, Method method, Field field, String before, String after, UUID author) throws IOException, InterruptedException {
+  public void logHistory(
+      SupabaseConnection sb,
+      int id,
+      Method method,
+      Field field,
+      String before,
+      String after,
+      UUID author)
+      throws IOException, InterruptedException {
     var body = new JsonObject();
     body.addProperty("faq", id);
     body.addProperty("author", author.toString());
@@ -131,18 +152,28 @@ public class FaqCache extends SingleCache<ArrayList<Topic>> {
     body.addProperty("before", before);
     body.addProperty("after", after);
 
-    HttpRequest faqListRequest = sb.request("history")
-        .POST(HttpRequest.BodyPublishers.ofString(body.toString()))
-        .build();
-    HttpResponse<String> faqList = HttpClient.newHttpClient()
-        .send(faqListRequest, HttpResponse.BodyHandlers.ofString());
+    HttpRequest faqListRequest =
+        sb.request("history").POST(HttpRequest.BodyPublishers.ofString(body.toString())).build();
+    HttpResponse<String> faqList =
+        HttpClient.newHttpClient().send(faqListRequest, HttpResponse.BodyHandlers.ofString());
 
-    if (faqList.statusCode() != 201) throw new IllegalStateException("Couldn't log operation, got %s - %s".formatted(faqList.statusCode(), faqList.body()));
+    if (faqList.statusCode() != 201)
+      throw new IllegalStateException(
+          "Couldn't log operation, got %s - %s".formatted(faqList.statusCode(), faqList.body()));
 
-    plugin.debug("FAQ modification has been logged: #%s %s %s by %s; %s chars -> %s chars".formatted(id, method, field, author, (before == null ? "empty" : before.length()), after.length()));
+    plugin.debug(
+        "FAQ modification has been logged: #%s %s %s by %s; %s chars -> %s chars"
+            .formatted(
+                id,
+                method,
+                field,
+                author,
+                (before == null ? "empty" : before.length()),
+                after.length()));
   }
 
-  public Optional<Topic> supabasePatch(SupabaseConnection sb, int id, Field key, String newValue, UUID author) {
+  public Optional<Topic> supabasePatch(
+      SupabaseConnection sb, int id, Field key, String newValue, UUID author) {
     try {
       var existing = findNow(id);
       logHistory(sb, id, Method.PATCH, key, existing.findField(key), newValue, author);
@@ -150,14 +181,18 @@ public class FaqCache extends SingleCache<ArrayList<Topic>> {
       var body = new JsonObject();
       body.addProperty(key.name().toLowerCase(), newValue);
 
-      HttpRequest faqListRequest = sb.single("faqs?active=is.true&id=eq." + id)
-          .method("PATCH", HttpRequest.BodyPublishers.ofString(body.toString()))
-          .build();
-      HttpResponse<InputStream> faqList = HttpClient.newHttpClient()
-          .send(faqListRequest, HttpResponse.BodyHandlers.ofInputStream());
+      HttpRequest faqListRequest =
+          sb.single("faqs?active=is.true&id=eq." + id)
+              .method("PATCH", HttpRequest.BodyPublishers.ofString(body.toString()))
+              .build();
+      HttpResponse<InputStream> faqList =
+          HttpClient.newHttpClient()
+              .send(faqListRequest, HttpResponse.BodyHandlers.ofInputStream());
 
       if (faqList.statusCode() >= 300) {
-        throw new IllegalStateException("Failed to patch? Got %s - %s".formatted(faqList.statusCode(), new String(faqList.body().readAllBytes())));
+        throw new IllegalStateException(
+            "Failed to patch? Got %s - %s"
+                .formatted(faqList.statusCode(), new String(faqList.body().readAllBytes())));
       }
 
       JsonElement root = parseReader(new InputStreamReader(faqList.body(), StandardCharsets.UTF_8));
@@ -171,7 +206,8 @@ public class FaqCache extends SingleCache<ArrayList<Topic>> {
     }
   }
 
-  public Optional<Topic> supabasePatchComplex(SupabaseConnection sb, int id, Field key, String newValue, JsonElement element, UUID author) {
+  public Optional<Topic> supabasePatchComplex(
+      SupabaseConnection sb, int id, Field key, String newValue, JsonElement element, UUID author) {
     try {
       var existing = findNow(id);
       logHistory(sb, id, Method.PATCH, key, existing.findField(key), newValue, author);
@@ -179,14 +215,18 @@ public class FaqCache extends SingleCache<ArrayList<Topic>> {
       var body = new JsonObject();
       body.add(key.name().toLowerCase(), element);
 
-      HttpRequest faqListRequest = sb.single("faqs?active=is.true&id=eq." + id)
-          .method("PATCH", HttpRequest.BodyPublishers.ofString(body.toString()))
-          .build();
-      HttpResponse<InputStream> faqList = HttpClient.newHttpClient()
-          .send(faqListRequest, HttpResponse.BodyHandlers.ofInputStream());
+      HttpRequest faqListRequest =
+          sb.single("faqs?active=is.true&id=eq." + id)
+              .method("PATCH", HttpRequest.BodyPublishers.ofString(body.toString()))
+              .build();
+      HttpResponse<InputStream> faqList =
+          HttpClient.newHttpClient()
+              .send(faqListRequest, HttpResponse.BodyHandlers.ofInputStream());
 
       if (faqList.statusCode() >= 300) {
-        throw new IllegalStateException("Failed to patch? Got %s - %s".formatted(faqList.statusCode(), new String(faqList.body().readAllBytes())));
+        throw new IllegalStateException(
+            "Failed to patch? Got %s - %s"
+                .formatted(faqList.statusCode(), new String(faqList.body().readAllBytes())));
       }
 
       JsonElement root = parseReader(new InputStreamReader(faqList.body(), StandardCharsets.UTF_8));
@@ -200,7 +240,13 @@ public class FaqCache extends SingleCache<ArrayList<Topic>> {
     }
   }
 
-  public Optional<Topic> supabasePatchArray(SupabaseConnection sb, int id, Field key, String modifiedEntry, Method actualMethod, UUID author) {
+  public Optional<Topic> supabasePatchArray(
+      SupabaseConnection sb,
+      int id,
+      Field key,
+      String modifiedEntry,
+      Method actualMethod,
+      UUID author) {
     if (actualMethod != Method.DELETE && actualMethod != Method.POST) {
       throw new IllegalStateException();
     }
@@ -208,7 +254,14 @@ public class FaqCache extends SingleCache<ArrayList<Topic>> {
     try {
       var existing = findNow(id);
 
-      logHistory(sb, id, actualMethod, key, (actualMethod == Method.POST ? null : modifiedEntry), (actualMethod == Method.DELETE ? "" : modifiedEntry), author);
+      logHistory(
+          sb,
+          id,
+          actualMethod,
+          key,
+          (actualMethod == Method.POST ? null : modifiedEntry),
+          (actualMethod == Method.DELETE ? "" : modifiedEntry),
+          author);
       var newValue = existing.findArrayField(key);
       if (actualMethod == Method.POST) newValue.add(modifiedEntry);
       if (actualMethod == Method.DELETE) newValue.remove(modifiedEntry);
@@ -218,14 +271,18 @@ public class FaqCache extends SingleCache<ArrayList<Topic>> {
       newValue.forEach(arrBody::add);
       body.add(key.name().toLowerCase(), arrBody);
 
-      HttpRequest faqListRequest = sb.single("faqs?active=is.true&id=eq." + id)
-          .method("PATCH", HttpRequest.BodyPublishers.ofString(body.toString()))
-          .build();
-      HttpResponse<InputStream> faqList = HttpClient.newHttpClient()
-          .send(faqListRequest, HttpResponse.BodyHandlers.ofInputStream());
+      HttpRequest faqListRequest =
+          sb.single("faqs?active=is.true&id=eq." + id)
+              .method("PATCH", HttpRequest.BodyPublishers.ofString(body.toString()))
+              .build();
+      HttpResponse<InputStream> faqList =
+          HttpClient.newHttpClient()
+              .send(faqListRequest, HttpResponse.BodyHandlers.ofInputStream());
 
       if (faqList.statusCode() >= 300) {
-        throw new IllegalStateException("Failed to patch? Got %s - %s".formatted(faqList.statusCode(), new String(faqList.body().readAllBytes())));
+        throw new IllegalStateException(
+            "Failed to patch? Got %s - %s"
+                .formatted(faqList.statusCode(), new String(faqList.body().readAllBytes())));
       }
 
       JsonElement root = parseReader(new InputStreamReader(faqList.body(), StandardCharsets.UTF_8));
@@ -246,14 +303,16 @@ public class FaqCache extends SingleCache<ArrayList<Topic>> {
       body.addProperty("content", "");
       body.addProperty("author", author.toString());
 
-      HttpRequest faqListRequest = sb.single("faqs")
-          .POST(HttpRequest.BodyPublishers.ofString(body.toString()))
-          .build();
-      HttpResponse<InputStream> faqList = HttpClient.newHttpClient()
-          .send(faqListRequest, HttpResponse.BodyHandlers.ofInputStream());
+      HttpRequest faqListRequest =
+          sb.single("faqs").POST(HttpRequest.BodyPublishers.ofString(body.toString())).build();
+      HttpResponse<InputStream> faqList =
+          HttpClient.newHttpClient()
+              .send(faqListRequest, HttpResponse.BodyHandlers.ofInputStream());
 
       if (faqList.statusCode() >= 300) {
-        throw new IllegalStateException("Failed to post? Got %s - %s".formatted(faqList.statusCode(), new String(faqList.body().readAllBytes())));
+        throw new IllegalStateException(
+            "Failed to post? Got %s - %s"
+                .formatted(faqList.statusCode(), new String(faqList.body().readAllBytes())));
       }
 
       JsonElement root = parseReader(new InputStreamReader(faqList.body(), StandardCharsets.UTF_8));
@@ -282,14 +341,16 @@ public class FaqCache extends SingleCache<ArrayList<Topic>> {
       body.addProperty("active", false);
       body.addProperty("topic", "~." + System.currentTimeMillis() + "." + existing.topic());
 
-      HttpRequest faqListRequest = sb.single("faqs?active=is.true&id=eq." + id)
-          .method("PATCH", HttpRequest.BodyPublishers.ofString(body.toString()))
-          .build();
-      HttpResponse<String> faqList = HttpClient.newHttpClient()
-          .send(faqListRequest, HttpResponse.BodyHandlers.ofString());
+      HttpRequest faqListRequest =
+          sb.single("faqs?active=is.true&id=eq." + id)
+              .method("PATCH", HttpRequest.BodyPublishers.ofString(body.toString()))
+              .build();
+      HttpResponse<String> faqList =
+          HttpClient.newHttpClient().send(faqListRequest, HttpResponse.BodyHandlers.ofString());
 
       if (faqList.statusCode() >= 300) {
-        throw new IllegalStateException("Failed to delete? Got %s - %s".formatted(faqList.statusCode(), faqList.body()));
+        throw new IllegalStateException(
+            "Failed to delete? Got %s - %s".formatted(faqList.statusCode(), faqList.body()));
       }
 
       invalidate();

@@ -36,6 +36,8 @@ public record History(
     String after,
     Instant timestamp
 ) {
+  private static final char[] smallNumbers = "₀₁₂₃₄₅₆₇₈₉".toCharArray();
+
   public static History fromJson(JsonObject json) {
     return new History(
         json.get("id").getAsInt(),
@@ -48,8 +50,6 @@ public record History(
         OffsetDateTime.parse(json.get("timestamp").getAsString()).toInstant()
     );
   }
-
-  private static final char[] smallNumbers = "₀₁₂₃₄₅₆₇₈₉".toCharArray();
 
   public @NotNull String beforeOrBlank() {
     return Objects.requireNonNullElse(before, "");

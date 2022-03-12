@@ -30,19 +30,31 @@ import static com.vanillarite.faq.FaqPlugin.m;
 import static net.kyori.adventure.text.Component.space;
 import static net.kyori.adventure.text.Component.text;
 import static net.kyori.adventure.text.Component.textOfChildren;
-import static net.kyori.adventure.text.event.ClickEvent.*;
+import static net.kyori.adventure.text.event.ClickEvent.openUrl;
+import static net.kyori.adventure.text.event.ClickEvent.runCommand;
+import static net.kyori.adventure.text.event.ClickEvent.suggestCommand;
 import static net.kyori.adventure.text.event.HoverEvent.showText;
 import static net.kyori.adventure.text.format.NamedTextColor.*;
 import static net.kyori.adventure.text.format.TextDecoration.ITALIC;
 
 public class Manager {
+  public static final UUID NULL_UUID = new UUID(0, 0);
   private final FaqPlugin plugin;
   private final FaqCache faqCache;
-  public static final UUID NULL_UUID = new UUID(0, 0);
 
   public Manager(FaqPlugin plugin) {
     this.plugin = plugin;
     this.faqCache = new FaqCache(this::getAllFaqTopics, 60, TimeUnit.MINUTES, plugin);
+  }
+
+  public static Component componentAuthor(UUID author) {
+    if (author.equals(NULL_UUID)) return text("SYSTEM", DARK_PURPLE);
+    var player = Bukkit.getOfflinePlayer(author).getName();
+    if (player == null) {
+      return text("Unknown", DARK_RED);
+    } else {
+      return text(player, GOLD);
+    }
   }
 
   public FaqCache cache() {
@@ -194,17 +206,6 @@ public class Manager {
     return m.deserialize(section.label())
         .hoverEvent(showText(m.deserialize(body)))
         .clickEvent(runCommand("/faqeditor set %s editor %s".formatted(topic.id(), type)));
-  }
-
-
-  public static Component componentAuthor(UUID author) {
-    if (author.equals(NULL_UUID)) return text("SYSTEM", DARK_PURPLE);
-    var player = Bukkit.getOfflinePlayer(author).getName();
-    if (player == null) {
-      return text("Unknown", DARK_RED);
-    } else {
-      return text(player, GOLD);
-    }
   }
 
   public UUID getAuthor(CommandSender sender) {

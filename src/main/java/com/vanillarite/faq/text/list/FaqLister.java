@@ -28,24 +28,36 @@ import static net.kyori.adventure.text.Component.empty;
 import static net.kyori.adventure.text.event.HoverEvent.showText;
 
 public final class FaqLister {
+  public final ListMessages.ListSection section;
   private final String command;
   private final FaqCache cache;
   private final Predicate<String> permissionCheck;
   private final Consumer<Component> lineConsumer;
-  @Nullable
-  private final BiFunction<Topic, Component, Component> topicCallback;
-  public final ListMessages.ListSection section;
+  @Nullable private final BiFunction<Topic, Component, Component> topicCallback;
   private final ListMessages generalSection;
   private final ArrayList<Component> topics = new ArrayList<>();
   private final HashMap<String, Boolean> knownGroups = new HashMap<>();
   private final String defaultGroup;
   private final int maxPerLine;
 
-  public FaqLister(PrefixKind style, String command, FaqPlugin plugin, FaqCache cache, Predicate<String> permissionCheck, Consumer<Component> lineConsumer) {
+  public FaqLister(
+      PrefixKind style,
+      String command,
+      FaqPlugin plugin,
+      FaqCache cache,
+      Predicate<String> permissionCheck,
+      Consumer<Component> lineConsumer) {
     this(style, command, plugin, cache, permissionCheck, lineConsumer, null);
   }
 
-  public FaqLister(PrefixKind style, String command, FaqPlugin plugin, FaqCache cache, Predicate<String> permissionCheck, Consumer<Component> lineConsumer, @Nullable BiFunction<Topic, Component, Component> topicCallback) {
+  public FaqLister(
+      PrefixKind style,
+      String command,
+      FaqPlugin plugin,
+      FaqCache cache,
+      Predicate<String> permissionCheck,
+      Consumer<Component> lineConsumer,
+      @Nullable BiFunction<Topic, Component, Component> topicCallback) {
     this.command = command;
     this.cache = cache;
     this.permissionCheck = permissionCheck;
@@ -75,15 +87,12 @@ public final class FaqLister {
   }
 
   private Component addTopic(Topic faq) {
-    var c = m.deserialize(section.eachTopic(),
-        Placeholder.unparsed("topic", faq.topic())
-    ).clickEvent(
-        ClickEvent.runCommand("/" + command + " " + faq.topic())
-    ).hoverEvent(
-        showText(
-            m.deserialize(section.hover(), Placeholder.unparsed("topic", faq.topic()))
-        )
-    );
+    var c =
+        m.deserialize(section.eachTopic(), Placeholder.unparsed("topic", faq.topic()))
+            .clickEvent(ClickEvent.runCommand("/" + command + " " + faq.topic()))
+            .hoverEvent(
+                showText(
+                    m.deserialize(section.hover(), Placeholder.unparsed("topic", faq.topic()))));
     if (topicCallback != null) c = topicCallback.apply(faq, c);
     return c;
   }
@@ -92,43 +101,52 @@ public final class FaqLister {
     var knownRows = new HashMap<Integer, Collection<Topic>>();
     var autoPos = new ArrayList<Topic>();
     Consumer<Topic> topicConsumer = (t) -> topics.add(topicFun.apply(t));
-    group.forEach(t -> {
-      if (t.pos().line() == 0) {
-        autoPos.add(t);
-      } else {
-        knownRows.computeIfAbsent(t.pos().line(), k -> new ArrayList<>()).add(t);
-      }
-    });
-    knownRows.entrySet().stream().sorted(Comparator.comparingInt(Map.Entry::getKey)).forEachOrdered(i -> {
-      i.getValue().stream().sorted(Comparator.comparingInt(j -> j.pos().col())).forEachOrdered(topicConsumer);
-      emitLine();
-    });
+    group.forEach(
+        t -> {
+          if (t.pos().line() == 0) {
+            autoPos.add(t);
+          } else {
+            knownRows.computeIfAbsent(t.pos().line(), k -> new ArrayList<>()).add(t);
+          }
+        });
+    knownRows.entrySet().stream()
+        .sorted(Comparator.comparingInt(Map.Entry::getKey))
+        .forEachOrdered(
+            i -> {
+              i.getValue().stream()
+                  .sorted(Comparator.comparingInt(j -> j.pos().col()))
+                  .forEachOrdered(topicConsumer);
+              emitLine();
+            });
     emitLine();
-    autoPos.forEach((faq) -> {
-      if (topics.size() + 1 > maxPerLine) emitLine();
-      topicConsumer.accept(faq);
-    });
+    autoPos.forEach(
+        (faq) -> {
+          if (topics.size() + 1 > maxPerLine) emitLine();
+          topicConsumer.accept(faq);
+        });
     emitLine();
   }
 
   public void run() {
     lineConsumer.accept(m.deserialize(section.header()));
 
-    topicsByGroup()
-        .asMap()
-        .entrySet()
-        .stream()
-        .sorted((a, b) ->
-            Comparator.<String, Boolean>comparing(defaultGroup::equals).reversed()
-                .thenComparing(Comparator.naturalOrder())
-                .compare(a.getKey(), b.getKey())
-        )
-        .forEachOrdered((topicGroup) -> {
-          if (!topicGroup.getKey().equals(defaultGroup)) {
-            lineConsumer.accept(m.deserialize(Objects.requireNonNull(generalSection.groupSeparator()), Placeholder.unparsed("group", topicGroup.getKey())));
-          }
-          emitTopicGroup(topicGroup.getValue(), this::addTopic);
-        });
+    topicsByGroup().asMap().entrySet().stream()
+        .sorted(
+            (a, b) ->
+                Comparator.<String, Boolean>comparing(defaultGroup::equals)
+                    .reversed()
+                    .thenComparing(Comparator.naturalOrder())
+                    .compare(a.getKey(), b.getKey()))
+        .forEachOrdered(
+            (topicGroup) -> {
+              if (!topicGroup.getKey().equals(defaultGroup)) {
+                lineConsumer.accept(
+                    m.deserialize(
+                        Objects.requireNonNull(generalSection.groupSeparator()),
+                        Placeholder.unparsed("group", topicGroup.getKey())));
+              }
+              emitTopicGroup(topicGroup.getValue(), this::addTopic);
+            });
 
     lineConsumer.accept(empty());
   }
@@ -140,11 +158,13 @@ public final class FaqLister {
   private Multimap<String, Topic> topicsByGroup() {
     Multimap<String, Topic> topicsByGroup = MultimapBuilder.hashKeys().arrayListValues().build();
 
-    cache.getIgnoreEmpty().forEach((faq) -> {
-      if (checkGroup(faq.group())) topicsByGroup.put(faq.group(), faq);
-    });
+    cache
+        .getIgnoreEmpty()
+        .forEach(
+            (faq) -> {
+              if (checkGroup(faq.group())) topicsByGroup.put(faq.group(), faq);
+            });
 
     return topicsByGroup;
   }
-
 }

@@ -34,15 +34,15 @@ import java.util.function.Function;
 
 public final class FaqPlugin extends JavaPlugin {
   public static final MiniMessage m = MiniMessage.miniMessage();
+  private final ObjectMapper.Factory objectFactory =
+      ObjectMapper.factoryBuilder().defaultNamingScheme(NamingSchemes.SNAKE_CASE).build();
+  private final YamlConfigurationLoader.Builder configBuilder =
+      YamlConfigurationLoader.builder()
+          .defaultOptions(
+              opts -> opts.serializers(builder -> builder.registerAnnotatedObjects(objectFactory)));
+  private final File configFile = new File(this.getDataFolder(), "config.yml");
   private boolean isBungee = false;
   private Config config;
-  private final ObjectMapper.Factory objectFactory = ObjectMapper
-      .factoryBuilder()
-      .defaultNamingScheme(NamingSchemes.SNAKE_CASE)
-      .build();
-  private final YamlConfigurationLoader.Builder configBuilder = YamlConfigurationLoader.builder()
-      .defaultOptions(opts -> opts.serializers(builder -> builder.registerAnnotatedObjects(objectFactory)));
-  private final File configFile = new File(this.getDataFolder(), "config.yml");
 
   public Config config() {
     return config;
@@ -65,7 +65,7 @@ public final class FaqPlugin extends JavaPlugin {
 
     final Function<CommandTree<CommandSender>, CommandExecutionCoordinator<CommandSender>>
         executionCoordinatorFunction =
-        AsynchronousCommandExecutionCoordinator.<CommandSender>newBuilder().build();
+            AsynchronousCommandExecutionCoordinator.<CommandSender>newBuilder().build();
     final Function<CommandSender, CommandSender> mapperFunction = Function.identity();
     PaperCommandManager<CommandSender> manager;
     try {
@@ -79,21 +79,22 @@ public final class FaqPlugin extends JavaPlugin {
     }
     manager.registerBrigadier();
     manager.registerAsynchronousCompletions();
-    manager.setCommandSuggestionProcessor((context, strings) -> {
-      final String input;
-      if (context.getInputQueue().isEmpty()) {
-        input = "";
-      } else {
-        input = context.getInputQueue().peek();
-      }
-      final List<String> suggestions = new LinkedList<>();
-      for (final String suggestion : strings) {
-        if (suggestion.toLowerCase().startsWith(input.toLowerCase())) {
-          suggestions.add(suggestion);
-        }
-      }
-      return suggestions;
-    });
+    manager.setCommandSuggestionProcessor(
+        (context, strings) -> {
+          final String input;
+          if (context.getInputQueue().isEmpty()) {
+            input = "";
+          } else {
+            input = context.getInputQueue().peek();
+          }
+          final List<String> suggestions = new LinkedList<>();
+          for (final String suggestion : strings) {
+            if (suggestion.toLowerCase().startsWith(input.toLowerCase())) {
+              suggestions.add(suggestion);
+            }
+          }
+          return suggestions;
+        });
     final Function<ParserParameters, CommandMeta> commandMetaFunction =
         p ->
             CommandMeta.simple()
@@ -130,13 +131,14 @@ public final class FaqPlugin extends JavaPlugin {
             (e) -> e.sendPluginMessage(this, "BungeeCord", out.toByteArray()),
             () -> {
               if (sender != null) {
-                sender.sendMessage(Component.text("Failed to broadcast because nobody is online", NamedTextColor.RED));
+                sender.sendMessage(
+                    Component.text(
+                        "Failed to broadcast because nobody is online", NamedTextColor.RED));
               } else {
                 getLogger().severe("Failed to broadcast because nobody is online");
               }
             });
   }
-
 
   public void debug(String msg) {
     if (config.debug()) {
@@ -151,6 +153,7 @@ public final class FaqPlugin extends JavaPlugin {
   public void loadConfig() throws ConfigurateException {
     final var configLoader = configBuilder.file(configFile).build();
     final var defaultLoader = configBuilder.url(this.getClass().getResource("/config.yml")).build();
-    config = objectFactory.get(Config.class).load(configLoader.load().mergeFrom(defaultLoader.load()));
+    config =
+        objectFactory.get(Config.class).load(configLoader.load().mergeFrom(defaultLoader.load()));
   }
 }

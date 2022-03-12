@@ -35,7 +35,9 @@ public class SingleCache<T> {
       if (cause == null) throw new RuntimeException(e);
       else if (cause instanceof RuntimeException) throw (RuntimeException) cause;
       else if (cause instanceof Error) throw (Error) cause;
-      else throw new RuntimeException("Unexpected error loading item into cache: " + cause.getMessage(), cause);
+      else
+        throw new RuntimeException(
+            "Unexpected error loading item into cache: " + cause.getMessage(), cause);
     }
   }
 

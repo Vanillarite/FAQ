@@ -1,3 +1,7 @@
 package com.vanillarite.faq.storage.supabase;
 
-public enum Method { POST, PATCH, DELETE }
+public enum Method {
+  POST,
+  PATCH,
+  DELETE
+}

@@ -1,7 +1,6 @@
 package com.vanillarite.faq.util;
 
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
@@ -33,9 +32,9 @@ public class Prefixer {
   private void loggedSend(Component message) {
     sender.sendMessage(message);
     if (sender instanceof Player) {
-      Bukkit.getConsoleSender().sendMessage(
-          Component.text("[VanillariteFAQ] For " + sender.getName() + ": ").append(message)
-      );
+      Bukkit.getConsoleSender()
+          .sendMessage(
+              Component.text("[VanillariteFAQ] For " + sender.getName() + ": ").append(message));
     }
   }
 
@@ -74,4 +73,3 @@ public class Prefixer {
     sender.sendMessage(component(miniMessage, templates));
   }
 }
-

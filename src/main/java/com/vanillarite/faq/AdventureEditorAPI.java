@@ -24,57 +24,80 @@ public final class AdventureEditorAPI {
     this.client = HttpClient.newHttpClient();
   }
 
-  public @NotNull CompletableFuture<String> startSession(final @NotNull String input, final @NotNull String command, final @NotNull String application) {
-    final HttpRequest request = HttpRequest.newBuilder()
-        .POST(HttpRequest.BodyPublishers.ofString(constructBody(input, command, application), StandardCharsets.UTF_8))
-        .header("content-type", "application/json; charset=UTF-8")
-        .uri(root.resolve(URI.create("/api/editor/input")))
-        .build();
+  public @NotNull CompletableFuture<String> startSession(
+      final @NotNull String input,
+      final @NotNull String command,
+      final @NotNull String application) {
+    final HttpRequest request =
+        HttpRequest.newBuilder()
+            .POST(
+                HttpRequest.BodyPublishers.ofString(
+                    constructBody(input, command, application), StandardCharsets.UTF_8))
+            .header("content-type", "application/json; charset=UTF-8")
+            .uri(root.resolve(URI.create("/api/editor/input")))
+            .build();
     final CompletableFuture<String> result = new CompletableFuture<>();
 
-    this.client.sendAsync(request, HttpResponse.BodyHandlers.ofString()).thenApply(stringHttpResponse -> {
-      if (stringHttpResponse.statusCode() != 200) {
-        result.completeExceptionally(new IOException("The server could not handle the request. (%s)".formatted(stringHttpResponse.statusCode())));
-      } else {
-        final String body = stringHttpResponse.body();
-        final Matcher matcher = TOKEN_PATTERN.matcher(body);
+    this.client
+        .sendAsync(request, HttpResponse.BodyHandlers.ofString())
+        .thenApply(
+            stringHttpResponse -> {
+              if (stringHttpResponse.statusCode() != 200) {
+                result.completeExceptionally(
+                    new IOException(
+                        "The server could not handle the request. (%s)"
+                            .formatted(stringHttpResponse.statusCode())));
+              } else {
+                final String body = stringHttpResponse.body();
+                final Matcher matcher = TOKEN_PATTERN.matcher(body);
 
-        if (matcher.find()) {
-          final String group = matcher.group(1);
-          result.complete(group);
-        }
+                if (matcher.find()) {
+                  final String group = matcher.group(1);
+                  result.complete(group);
+                }
 
-        result.completeExceptionally(new IOException("The result did not contain a token. (%s)".formatted(body)));
-      }
-      return null;
-    });
+                result.completeExceptionally(
+                    new IOException("The result did not contain a token. (%s)".formatted(body)));
+              }
+              return null;
+            });
 
     return result;
   }
 
   public @NotNull CompletableFuture<String> retrieveSession(final @NotNull String token) {
-    final HttpRequest request = HttpRequest.newBuilder()
-        .GET()
-        .uri(root.resolve(URI.create("/api/editor/output?token=" + token)))
-        .build();
+    final HttpRequest request =
+        HttpRequest.newBuilder()
+            .GET()
+            .uri(root.resolve(URI.create("/api/editor/output?token=" + token)))
+            .build();
     final CompletableFuture<String> result = new CompletableFuture<>();
 
-    this.client.sendAsync(request, HttpResponse.BodyHandlers.ofString()).thenApply(stringHttpResponse -> {
-      final int statusCode = stringHttpResponse.statusCode();
-      if (statusCode == 404) {
-        result.complete(null);
-      } else if (statusCode != 200) {
-        result.completeExceptionally(new IOException("The server could not handle the request. (%s)".formatted(stringHttpResponse.statusCode())));
-      } else {
-        result.complete(stringHttpResponse.body());
-      }
-      return null;
-    });
+    this.client
+        .sendAsync(request, HttpResponse.BodyHandlers.ofString())
+        .thenApply(
+            stringHttpResponse -> {
+              final int statusCode = stringHttpResponse.statusCode();
+              if (statusCode == 404) {
+                result.complete(null);
+              } else if (statusCode != 200) {
+                result.completeExceptionally(
+                    new IOException(
+                        "The server could not handle the request. (%s)"
+                            .formatted(stringHttpResponse.statusCode())));
+              } else {
+                result.complete(stringHttpResponse.body());
+              }
+              return null;
+            });
 
     return result;
   }
 
-  private @NotNull String constructBody(final @NotNull String input, final @NotNull String command, final @NotNull String application) {
+  private @NotNull String constructBody(
+      final @NotNull String input,
+      final @NotNull String command,
+      final @NotNull String application) {
     var body = new JsonObject();
     body.addProperty("input", input);
     body.addProperty("command", command);
@@ -82,4 +105,3 @@ public final class AdventureEditorAPI {
     return body.toString();
   }
 }
-

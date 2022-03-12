@@ -40,5 +40,4 @@ public class DurationUtil {
   public static String formatInstantToNow(Instant instant) {
     return formatDuration(Duration.between(instant, Instant.now()));
   }
-
 }

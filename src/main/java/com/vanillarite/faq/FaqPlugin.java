@@ -109,7 +109,7 @@ public final class FaqPlugin extends JavaPlugin {
     annotationParser.parse(commandHolder);
     getLogger().info(manager.getCommands().toString());
 
-    getServer().getScheduler().runTaskLater(this, () -> getLogger().info(config.toString()), 50);
+    getServer().getScheduler().runTaskLater(this, () -> debug(config.toString()), 50);
   }
 
   public void networkBroadcast(@NotNull Component c, @Nullable CommandSender sender) {

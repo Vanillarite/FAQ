@@ -87,7 +87,7 @@ public class Commands {
         (t) -> {
           if (t.group().equals(defaultGroup) || sender.hasPermission("vfaq.group." + t.group())) {
             prefix.response(
-                section.header() + "<r>\n\n" + t.content() + "\n",
+                section.header() + "<reset>\n\n" + t.content() + "\n",
                 Placeholder.unparsed("topic", t.topic())
             );
           } else {

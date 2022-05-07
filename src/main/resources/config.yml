@@ -1,9 +1,9 @@
 debug: false
 
 prefix:
-  faq: "<gradient:#2fb7bb:#8ee9ec><b>FAQ</gradient> <#eae9eb>»<r> "
-  faq4u: "<gradient:#2fb7bb:#8ee9ec><b>FAQ4U</gradient> <#eae9eb>»<r> "
-  editor: "<gradient:#ba652f:#edb38e><b>vFAQ</gradient> <#eae9eb>»<r> "
+  faq: "<gradient:#2fb7bb:#8ee9ec><b>FAQ</gradient> <#eae9eb>»<reset> "
+  faq4u: "<gradient:#2fb7bb:#8ee9ec><b>FAQ4U</gradient> <#eae9eb>»<reset> "
+  editor: "<gradient:#ba652f:#edb38e><b>vFAQ</gradient> <#eae9eb>»<reset> "
 
 messages:
   list:
@@ -11,13 +11,13 @@ messages:
     group_separator: "<b><light_purple><group> FAQ:<light_purple>"
     faq:
       header: "<gold>Click on a topic to learn more about it!</gold>"
-      prefix: "<light_purple><b>•<r> "
+      prefix: "<light_purple><b>•<reset> "
       each_topic: "<black>[<aqua><topic></aqua>]</black>  "
       hover: "<gold>Click here to learn more about <b><topic></b></gold>"
       max_per_line: 4
     faq4u:
       header: "<gold>Click on a topic to <b>broadcast it and educate others</b> about it!</gold>"
-      prefix: "<red><b>•<r> "
+      prefix: "<red><b>•<reset> "
       each_topic: "<white>[<dark_aqua><topic></dark_aqua>]</white>  "
       hover: "<gold>Click here to educate others about <b><topic></b></gold>"
       max_per_line: 4

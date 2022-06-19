@@ -15,9 +15,9 @@ repositories {
 }
 
 dependencies {
-    compileOnly("io.papermc.paper", "paper-api", "1.18.2-R0.1-SNAPSHOT")
-    implementation("cloud.commandframework", "cloud-paper", "1.6.2")
-    implementation("cloud.commandframework", "cloud-annotations", "1.6.2")
+    compileOnly("io.papermc.paper", "paper-api", "1.19-R0.1-SNAPSHOT")
+    implementation("cloud.commandframework", "cloud-paper", "1.7.0")
+    implementation("cloud.commandframework", "cloud-annotations", "1.7.0")
     implementation("io.github.java-diff-utils", "java-diff-utils", "4.5")
     implementation("org.spongepowered", "configurate-yaml", "4.1.2")
 }

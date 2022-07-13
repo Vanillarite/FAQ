@@ -5,7 +5,7 @@ plugins {
 
 val buildNum = System.getenv("CI_PIPELINE_IID") ?: "dirty"
 group = "com.vanillarite"
-version = "0.3.0-$buildNum"
+version = "0.3.1-$buildNum"
 
 repositories {
     mavenCentral()

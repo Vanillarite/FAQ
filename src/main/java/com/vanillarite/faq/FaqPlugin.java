@@ -53,7 +53,7 @@ public final class FaqPlugin extends JavaPlugin {
     saveDefaultConfig();
 
     final boolean bungeeEnabled = getServer().spigot().getSpigotConfig().getBoolean("settings.bungeecord");
-    final boolean velocityEnabled = getServer().spigot().getPaperConfig().getBoolean("settings.velocity-support.enabled");
+    final boolean velocityEnabled = getServer().spigot().getPaperConfig().getBoolean("proxies.velocity.enabled");
     isBungee = bungeeEnabled || velocityEnabled;
     if (isBungee) {
       getServer().getMessenger().registerOutgoingPluginChannel(this, "BungeeCord");

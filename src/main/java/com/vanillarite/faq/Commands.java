@@ -1,12 +1,12 @@
 package com.vanillarite.faq;
 
-import cloud.commandframework.annotations.Argument;
-import cloud.commandframework.annotations.CommandDescription;
-import cloud.commandframework.annotations.CommandMethod;
-import cloud.commandframework.annotations.CommandPermission;
-import cloud.commandframework.annotations.specifier.Greedy;
-import cloud.commandframework.annotations.suggestions.Suggestions;
-import cloud.commandframework.context.CommandContext;
+import org.incendo.cloud.annotation.specifier.Greedy;
+import org.incendo.cloud.annotations.Argument;
+import org.incendo.cloud.annotations.CommandDescription;
+import org.incendo.cloud.annotations.Command;
+import org.incendo.cloud.annotations.Permission;
+import org.incendo.cloud.annotations.suggestion.Suggestions;
+import org.incendo.cloud.context.CommandContext;
 import com.github.difflib.algorithm.DiffException;
 import com.github.difflib.text.DiffRowGenerator;
 import com.vanillarite.faq.config.PrefixKind;
@@ -52,8 +52,8 @@ public class Commands {
   }
 
   @CommandDescription("List all FAQs")
-  @CommandMethod("faq")
-  @CommandPermission("vfaq.faq")
+  @Command("faq")
+  @Permission("vfaq.faq")
   private void commandFaqNoArgs(
       final @NotNull CommandSender sender
   ) {
@@ -73,8 +73,8 @@ public class Commands {
   }
 
   @CommandDescription("View a topic from the FAQ")
-  @CommandMethod("faq <topic>")
-  @CommandPermission("vfaq.faq")
+  @Command("faq <topic>")
+  @Permission("vfaq.faq")
   private void commandFaq(
       final @NotNull CommandSender sender,
       final @NotNull @Argument(value = "topic", suggestions = "faqTopicsAll") @Greedy String topic
@@ -99,8 +99,8 @@ public class Commands {
   }
 
   @CommandDescription("List all FAQs to show to someone else")
-  @CommandMethod("faq4u")
-  @CommandPermission("vfaq.faq4u")
+  @Command("faq4u")
+  @Permission("vfaq.faq4u")
   private void commandFaqForYouNoArgs(
       final @NotNull CommandSender sender
   ) {
@@ -116,8 +116,8 @@ public class Commands {
 
 
   @CommandDescription("Show everyone else a topic from the FAQ")
-  @CommandMethod("faq4u <topic>")
-  @CommandPermission("vfaq.faq4u")
+  @Command("faq4u <topic>")
+  @Permission("vfaq.faq4u")
   private void commandFaqForYou(
       final @NotNull CommandSender sender,
       final @NotNull @Argument(value = "topic", suggestions = "faqTopicsDefault") @Greedy String topic
@@ -157,8 +157,8 @@ public class Commands {
   }
 
   @CommandDescription("Create a new FAQ")
-  @CommandMethod("faqeditor new <topic>")
-  @CommandPermission("vfaq.manage.new")
+  @Command("faqeditor new <topic>")
+  @Permission("vfaq.manage.new")
   private void commandFaqNew(
       final @NotNull CommandSender sender,
       final @NotNull @Argument("topic") @Greedy String topicName
@@ -192,8 +192,8 @@ public class Commands {
   }
 
   @CommandDescription("List all FAQ for management")
-  @CommandMethod("faqeditor")
-  @CommandPermission("vfaq.manage.list")
+  @Command("faqeditor")
+  @Permission("vfaq.manage.list")
   private void commandFaqList(
       final @NotNull CommandSender sender
   ) {
@@ -251,8 +251,8 @@ public class Commands {
   }
 
   @CommandDescription("Menu for editing FAQ")
-  @CommandMethod("faqeditor actions <id>")
-  @CommandPermission("vfaq.manage.list")
+  @Command("faqeditor actions <id>")
+  @Permission("vfaq.manage.list")
   private void commandFaqActions(
       final @NotNull CommandSender sender,
       final @Argument("id") int id
@@ -271,8 +271,8 @@ public class Commands {
   }
 
   @CommandDescription("Create editor modification to the content of a FAQ")
-  @CommandMethod("faqeditor set <id> editor content")
-  @CommandPermission("vfaq.manage.edit.content")
+  @Command("faqeditor set <id> editor content")
+  @Permission("vfaq.manage.edit.content")
   private void commandFaqSetEditorContent(
       final @NotNull CommandSender sender,
       final @Argument("id") int id
@@ -294,8 +294,8 @@ public class Commands {
   }
 
   @CommandDescription("Create editor modification to the content of a FAQ")
-  @CommandMethod("faqeditor set <id> editor preface")
-  @CommandPermission("vfaq.manage.edit.preface")
+  @Command("faqeditor set <id> editor preface")
+  @Permission("vfaq.manage.edit.preface")
   private void commandFaqSetEditorPreface(
       final @NotNull CommandSender sender,
       final @Argument("id") int id
@@ -316,8 +316,8 @@ public class Commands {
   }
 
   @CommandDescription("Apply editor modification to the content of a FAQ")
-  @CommandMethod("faqeditor submit <id> content <token>")
-  @CommandPermission("vfaq.manage.edit.content")
+  @Command("faqeditor submit <id> content <token>")
+  @Permission("vfaq.manage.edit.content")
   private void commandFaqSubmitContent(
       final @NotNull CommandSender sender,
       final @Argument("id") int id,
@@ -328,8 +328,8 @@ public class Commands {
 
 
   @CommandDescription("Apply editor modification to the preface of a FAQ")
-  @CommandMethod("faqeditor submit <id> preface <token>")
-  @CommandPermission("vfaq.manage.edit.preface")
+  @Command("faqeditor submit <id> preface <token>")
+  @Permission("vfaq.manage.edit.preface")
   private void commandFaqSubmitPreface(
       final @NotNull CommandSender sender,
       final @Argument("id") int id,
@@ -339,8 +339,8 @@ public class Commands {
   }
 
   @CommandDescription("Set new topic to a FAQ")
-  @CommandMethod("faqeditor set <id> topic <new_topic>")
-  @CommandPermission("vfaq.manage.edit.rename")
+  @Command("faqeditor set <id> topic <new_topic>")
+  @Permission("vfaq.manage.edit.rename")
   private void commandFaqEditTopic(
       final @NotNull CommandSender sender,
       final @Argument("id") int id,
@@ -363,8 +363,8 @@ public class Commands {
   }
 
   @CommandDescription("Set group of a FAQ")
-  @CommandMethod("faqeditor set <id> group [new_group]")
-  @CommandPermission("vfaq.manage.edit.group")
+  @Command("faqeditor set <id> group [new_group]")
+  @Permission("vfaq.manage.edit.group")
   private void commandFaqEditGroup(
       final @NotNull CommandSender sender,
       final @Argument("id") int id,
@@ -387,8 +387,8 @@ public class Commands {
   }
 
   @CommandDescription("yes")
-  @CommandMethod("faqeditor debug dump")
-  @CommandPermission("vfaq.admin.debug")
+  @Command("faqeditor debug dump")
+  @Permission("vfaq.admin.debug")
   private void commandFaqDebug(
       final @NotNull CommandSender sender
   ) {
@@ -396,8 +396,8 @@ public class Commands {
   }
 
   @CommandDescription("Add new alias to a FAQ")
-  @CommandMethod("faqeditor set <id> alias add <new_alias>")
-  @CommandPermission("vfaq.manage.edit.alias")
+  @Command("faqeditor set <id> alias add <new_alias>")
+  @Permission("vfaq.manage.edit.alias")
   private void commandFaqAddAlias(
       final @NotNull CommandSender sender,
       final @Argument("id") int id,
@@ -420,8 +420,8 @@ public class Commands {
   }
 
   @CommandDescription("Remove alias from a FAQ")
-  @CommandMethod("faqeditor set <id> alias remove <alias_name>")
-  @CommandPermission("vfaq.manage.edit.alias")
+  @Command("faqeditor set <id> alias remove <alias_name>")
+  @Permission("vfaq.manage.edit.alias")
   private void commandFaqRemoveAlias(
       final @NotNull CommandSender sender,
       final @Argument("id") int id,
@@ -439,8 +439,8 @@ public class Commands {
   }
 
   @CommandDescription("Reposition a FAQ")
-  @CommandMethod("faqeditor set <id> positionmenu")
-  @CommandPermission("vfaq.manage.edit.move")
+  @Command("faqeditor set <id> positionmenu")
+  @Permission("vfaq.manage.edit.move")
   private void commandFaqAddAlias(
       final @NotNull CommandSender sender,
       final @Argument("id") int id
@@ -483,8 +483,8 @@ public class Commands {
   }
 
   @CommandDescription("Move a FAQ")
-  @CommandMethod("faqeditor set <id> pos <line> <col>")
-  @CommandPermission("vfaq.manage.edit.move")
+  @Command("faqeditor set <id> pos <line> <col>")
+  @Permission("vfaq.manage.edit.move")
   private void commandFaqRemoveAlias(
       final @NotNull CommandSender sender,
       final @Argument("id") int id,
@@ -504,8 +504,8 @@ public class Commands {
   }
 
   @CommandDescription("Delete FAQ")
-  @CommandMethod("faqeditor delete <id>")
-  @CommandPermission("vfaq.manage.delete")
+  @Command("faqeditor delete <id>")
+  @Permission("vfaq.manage.delete")
   private void commandFaqDeleteTopic(
       final @NotNull CommandSender sender,
       final @Argument("id") int id
@@ -523,8 +523,8 @@ public class Commands {
   }
 
   @CommandDescription("Reload config")
-  @CommandMethod("faqeditor reload config")
-  @CommandPermission("vfaq.cmd.reload")
+  @Command("faqeditor reload config")
+  @Permission("vfaq.cmd.reload")
   private void commandReload(final @NotNull CommandSender sender) {
     try {
       plugin.loadConfig();
@@ -535,8 +535,8 @@ public class Commands {
     }
   }
 
-  @CommandMethod("faqeditor admin history <id>")
-  @CommandPermission("vfaq.admin.history")
+  @Command("faqeditor admin history <id>")
+  @Permission("vfaq.admin.history")
   private void commandAdminHistory(
       final @NotNull CommandSender sender,
       final @Argument("id") int faq
@@ -545,8 +545,8 @@ public class Commands {
     history.forEach(i -> sender.sendMessage(i.asComponent()));
   }
 
-  @CommandMethod("faqeditor admin inspect <id>")
-  @CommandPermission("vfaq.admin.inspect")
+  @Command("faqeditor admin inspect <id>")
+  @Permission("vfaq.admin.inspect")
   private void commandAdminInspect(
       final @NotNull CommandSender sender,
       final @Argument("id") int historyId
@@ -582,7 +582,7 @@ public class Commands {
   public @NotNull List<String> completeFaqTopicsAll(CommandContext<CommandSender> sender, String input) {
     var defaultGroup = plugin.config().messages().list().defaultGroup();
     return manager.cache().get().stream()
-        .filter(t -> t.group().equals(defaultGroup) || sender.getSender().hasPermission("vfaq.group." + t.group()))
+        .filter(t -> t.group().equals(defaultGroup) || sender.sender().hasPermission("vfaq.group." + t.group()))
         .mapMulti((Topic i, Consumer<String> r) -> {
           r.accept(i.topic());
           i.alias().forEach(r);

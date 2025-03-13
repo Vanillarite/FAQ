@@ -1,5 +1,5 @@
 name: VanillariteFAQ
 version: '${version}'
 main: com.vanillarite.faq.FaqPlugin
-api-version: 1.19
+api-version: 1.21.4
 authors: [ rymiel ]

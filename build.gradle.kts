@@ -1,11 +1,11 @@
 plugins {
-    id("com.github.johnrengelman.shadow") version "7.0.0"
+    id("com.gradleup.shadow") version "8.3.1"
     java
 }
 
 val buildNum = System.getenv("CI_PIPELINE_IID") ?: "dirty"
 group = "com.vanillarite"
-version = "0.3.2-$buildNum"
+version = "0.4.0-$buildNum"
 
 repositories {
     mavenCentral()
@@ -15,16 +15,15 @@ repositories {
 }
 
 dependencies {
-    compileOnly("io.papermc.paper", "paper-api", "1.19-R0.1-SNAPSHOT")
-    implementation("cloud.commandframework", "cloud-paper", "1.8.3")
-    implementation("cloud.commandframework", "cloud-annotations", "1.8.3")
+    compileOnly("io.papermc.paper", "paper-api", "1.21.4-R0.1-SNAPSHOT")
+    implementation("org.incendo", "cloud-paper", "2.0.0-beta.10")
+    implementation("org.incendo", "cloud-annotations", "2.0.0")
     implementation("io.github.java-diff-utils", "java-diff-utils", "4.5")
     implementation("org.spongepowered", "configurate-yaml", "4.1.2")
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
+    toolchain.languageVersion.set(JavaLanguageVersion.of(21))
 }
 
 tasks {

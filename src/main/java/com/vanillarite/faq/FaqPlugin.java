@@ -1,18 +1,11 @@
 package com.vanillarite.faq;
 
-import cloud.commandframework.CommandTree;
-import cloud.commandframework.annotations.AnnotationParser;
-import cloud.commandframework.arguments.parser.ParserParameters;
-import cloud.commandframework.arguments.parser.StandardParameters;
-import cloud.commandframework.execution.AsynchronousCommandExecutionCoordinator;
-import cloud.commandframework.execution.CommandExecutionCoordinator;
-import cloud.commandframework.meta.CommandMeta;
-import cloud.commandframework.paper.PaperCommandManager;
 import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
 import com.vanillarite.faq.config.Config;
 import com.vanillarite.faq.config.PrefixKind;
 import com.vanillarite.faq.util.Prefixer;
+import io.papermc.paper.command.brigadier.CommandSourceStack;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.minimessage.MiniMessage;
@@ -20,6 +13,14 @@ import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.incendo.cloud.CommandTree;
+import org.incendo.cloud.annotations.AnnotationParser;
+import org.incendo.cloud.bukkit.CloudBukkitCapabilities;
+import org.incendo.cloud.execution.ExecutionCoordinator;
+import org.incendo.cloud.meta.CommandMeta;
+import org.incendo.cloud.paper.LegacyPaperCommandManager;
+import org.incendo.cloud.paper.PaperCommandManager;
+import org.incendo.cloud.parser.ParserParameters;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.configurate.ConfigurateException;
@@ -65,51 +66,33 @@ public final class FaqPlugin extends JavaPlugin {
       e.printStackTrace();
     }
 
-    final Function<CommandTree<CommandSender>, CommandExecutionCoordinator<CommandSender>>
-        executionCoordinatorFunction =
-            AsynchronousCommandExecutionCoordinator.<CommandSender>newBuilder().build();
-    final Function<CommandSender, CommandSender> mapperFunction = Function.identity();
-    PaperCommandManager<CommandSender> manager;
-    try {
-      manager =
-          new PaperCommandManager<>(
-              this, executionCoordinatorFunction, mapperFunction, mapperFunction);
-    } catch (final Exception e) {
-      getLogger().severe("Failed to initialize the command manager");
-      getServer().getPluginManager().disablePlugin(this);
-      return;
+    final LegacyPaperCommandManager<CommandSender> manager =
+            LegacyPaperCommandManager.createNative(this, ExecutionCoordinator.simpleCoordinator());
+    if (manager.hasCapability(CloudBukkitCapabilities.NATIVE_BRIGADIER)) {
+      manager.registerBrigadier();
     }
-    manager.registerBrigadier();
-    manager.registerAsynchronousCompletions();
-    manager.setCommandSuggestionProcessor(
-        (context, strings) -> {
-          final String input;
-          if (context.getInputQueue().isEmpty()) {
-            input = "";
-          } else {
-            input = context.getInputQueue().peek();
-          }
-          final List<String> suggestions = new LinkedList<>();
-          for (final String suggestion : strings) {
-            if (suggestion.toLowerCase().startsWith(input.toLowerCase())) {
-              suggestions.add(suggestion);
-            }
-          }
-          return suggestions;
-        });
-    final Function<ParserParameters, CommandMeta> commandMetaFunction =
-        p ->
-            CommandMeta.simple()
-                .with(
-                    CommandMeta.DESCRIPTION,
-                    p.get(StandardParameters.DESCRIPTION, "No description"))
-                .build();
-    AnnotationParser<CommandSender> annotationParser =
-        new AnnotationParser<>(manager, CommandSender.class, commandMetaFunction);
+
+//    manager.setCommandSuggestionProcessor(
+//        (context, strings) -> {
+//          final String input;
+//          if (context.getInputQueue().isEmpty()) {
+//            input = "";
+//          } else {
+//            input = context.getInputQueue().peek();
+//          }
+//          final List<String> suggestions = new LinkedList<>();
+//          for (final String suggestion : strings) {
+//            if (suggestion.toLowerCase().startsWith(input.toLowerCase())) {
+//              suggestions.add(suggestion);
+//            }
+//          }
+//          return suggestions;
+//        });
+
+    AnnotationParser<CommandSender> annotationParser = new AnnotationParser<>(manager, CommandSender.class);
 
     var commandHolder = new Commands(this);
     annotationParser.parse(commandHolder);
-    getLogger().info(manager.getCommands().toString());
 
     getServer().getScheduler().runTaskLater(this, () -> debug(config.toString()), 50);
   }

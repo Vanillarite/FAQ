@@ -9,7 +9,7 @@ version = "0.3.2-$buildNum"
 
 repositories {
     mavenCentral()
-    maven("https://papermc.io/repo/repository/maven-public/")
+    maven("https://repo.papermc.io/repository/maven-public/")
     maven("https://oss.sonatype.org/content/groups/public/")
     maven("https://repo.incendo.org/content/repositories/snapshots")
 }

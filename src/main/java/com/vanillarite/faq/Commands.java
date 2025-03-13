@@ -184,6 +184,7 @@ public class Commands {
                 .apply(text("Please click to set the content now!", BLUE, UNDERLINED).hoverEvent(showText(text("Click!")))));
           } catch (ExecutionException | InterruptedException e) {
             prefix.logged(text("Making editor link failed?", RED));
+            plugin.getSLF4JLogger().error("Making editor link failed", e);
           }
         },
         () -> prefix.logged(text("Creating new FAQ failed?", RED))
@@ -288,6 +289,7 @@ public class Commands {
           .apply(text("Please click to edit the content of %s!".formatted(existing.topic()), BLUE, UNDERLINED).hoverEvent(showText(text("Click!")))));
     } catch (ExecutionException | InterruptedException e) {
       prefix.logged(text("Making editor link failed?", RED));
+      plugin.getSLF4JLogger().error("Making editor link failed", e);
     }
   }
 
@@ -309,6 +311,7 @@ public class Commands {
           .apply(text("Please click to edit the preface of %s!".formatted(existing.topic()), BLUE, UNDERLINED).hoverEvent(showText(text("Click!")))));
     } catch (ExecutionException | InterruptedException e) {
       prefix.logged(text("Making editor link failed?", RED));
+      plugin.getSLF4JLogger().error("Making editor link failed", e);
     }
   }
 

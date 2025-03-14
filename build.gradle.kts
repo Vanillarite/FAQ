@@ -36,10 +36,11 @@ tasks {
             exclude(dependency("org.intellij:"))
         }
 
-        relocate("cloud.commandframework", "${rootProject.group}.faq.shade.cloud")
+        relocate("org.incendo.cloud", "${rootProject.group}.faq.shade.cloud")
         relocate("io.leangen.geantyref", "${rootProject.group}.faq.shade.typetoken")
         relocate("com.github.difflib", "${rootProject.group}.faq.shade.difflib")
         relocate("org.spongepowered.configurate", "${rootProject.group}.faq.shade.configurate")
+        relocate("org.yaml.snakeyaml", "${rootProject.group}.faq.shade.snakeyaml")
 
         archiveClassifier.set(null as String?)
         destinationDirectory.set(rootProject.tasks.shadowJar.get().destinationDirectory.get())

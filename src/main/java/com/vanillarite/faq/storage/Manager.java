@@ -205,7 +205,7 @@ public class Manager {
 
     return m.deserialize(section.label())
         .hoverEvent(showText(m.deserialize(body)))
-        .clickEvent(runCommand("/faqeditor set %s editor %s".formatted(topic.id(), type)));
+        .clickEvent(runCommand("/faqeditor set %s editor %s".formatted(topic.id(), type.toString().toLowerCase())));
   }
 
   public UUID getAuthor(CommandSender sender) {
